@@ -1,0 +1,1123 @@
+{
+  "client": "Thunder Client",
+  "collectionName": "kubeclipper",
+  "dateExported": "2022-03-29T07:23:01.675Z",
+  "version": "1.1",
+  "folders": [
+    {
+      "containerId": "",
+      "sortNum": 10000,
+      "name": "oauth",
+      "_id": "9d849ccf-93a0-47db-aee7-828cb4d816cb",
+      "created": "2022-03-16T03:28:22.895Z"
+    },
+    {
+      "containerId": "",
+      "sortNum": 20000,
+      "name": "node",
+      "_id": "0ac2e8ed-05d0-4399-a194-428c229c6612",
+      "created": "2022-03-16T03:28:22.895Z"
+    },
+    {
+      "containerId": "",
+      "sortNum": 30000,
+      "name": "cluster",
+      "_id": "f5255890-2928-4126-9dd4-432987a01084",
+      "created": "2022-03-16T03:28:22.895Z"
+    },
+    {
+      "containerId": "",
+      "sortNum": 40000,
+      "name": "user",
+      "_id": "85b2e0b9-3b0f-4543-8281-6ef322e698c3",
+      "created": "2022-03-16T03:28:22.895Z"
+    },
+    {
+      "containerId": "",
+      "sortNum": 50000,
+      "name": "role",
+      "_id": "6aefa217-f7a5-4776-956a-40b615a29e19",
+      "created": "2022-03-16T03:28:22.895Z"
+    },
+    {
+      "containerId": "",
+      "sortNum": 60000,
+      "name": "config",
+      "_id": "c55e2b64-f30a-4794-b87f-dfa137260376",
+      "created": "2022-03-16T03:28:22.895Z"
+    },
+    {
+      "containerId": "",
+      "sortNum": 70000,
+      "name": "audit",
+      "_id": "dacdc333-56bd-44ea-90b5-dfab9d4ba9dc",
+      "created": "2022-03-16T03:28:22.895Z"
+    }
+  ],
+  "requests": [
+    {
+      "containerId": "0ac2e8ed-05d0-4399-a194-428c229c6612",
+      "sortNum": 10000,
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "*/*"
+        },
+        {
+          "name": "User-Agent",
+          "value": "Thunder Client (https://www.thunderclient.io)"
+        }
+      ],
+      "colId": "0db95ab6-cb59-4f22-b981-6fef82298143",
+      "name": "ListNodes",
+      "url": "{{HOST}}:{{PORT}}/api/core.kubeclipper.io/v1/nodes?K-User=kc-server&K-Token=123456",
+      "method": "GET",
+      "modified": "2022-03-28T08:26:33.201Z",
+      "created": "2022-03-16T03:28:22.910Z",
+      "_id": "2bd205ae-ded9-43f1-b01a-0c2f12b21673",
+      "params": [
+        {
+          "name": "watch",
+          "value": "true",
+          "isDisabled": true,
+          "isPath": false
+        },
+        {
+          "name": "K-User",
+          "value": "kc-server",
+          "isPath": false
+        },
+        {
+          "name": "K-Token",
+          "value": "123456",
+          "isPath": false
+        }
+      ],
+      "tests": []
+    },
+    {
+      "containerId": "f5255890-2928-4126-9dd4-432987a01084",
+      "sortNum": 10000,
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "*/*"
+        },
+        {
+          "name": "User-Agent",
+          "value": "Thunder Client (https://www.thunderclient.io)"
+        }
+      ],
+      "colId": "0db95ab6-cb59-4f22-b981-6fef82298143",
+      "name": "CreateCluster",
+      "url": "{{HOST}}:{{PORT}}/api/core.kubeclipper.io/v1/clusters",
+      "method": "POST",
+      "modified": "2022-03-16T03:28:22.910Z",
+      "created": "2022-03-16T03:28:22.910Z",
+      "_id": "5e07f104-8d03-4dd5-a766-822a948e9500",
+      "params": [
+        {
+          "name": "dryRun",
+          "value": "true",
+          "isDisabled": true,
+          "isPath": false
+        }
+      ],
+      "body": {
+        "type": "json",
+        "raw": "{\n    \"kind\": \"Cluster\",\n    \"apiVersion\": \"core.kubeclipper.io/v1\",\n    \"metadata\": {\n        \"name\": \"demo\"\n    },\n    \"offline\": true,\n    \"masters\": [\n        {\n            \"id\": \"18687d3d-a580-4a26-8b80-0f212bbba656\"\n        },\n        {\n            \"id\": \"e2fc948c-7da0-404d-a851-2fea3da17d6d\"\n        },\n                {\n            \"id\": \"7816235b-89cf-4955-9053-a23e69a3edbb\"\n        }\n    ],\n    \"workers\": [\n        {\n            \"id\": \"7e355091-8fa8-469a-9efa-0e19ed14d98b\"\n        }],\n    \"localRegistry\": \"\",\n    \"workerNodeVip\": \"169.254.169.102\",\n    \"kubernetesVersion\": \"v1.20.13\",\n    \"containerRuntime\": {\n        \"containerRuntimeType\": \"containerd\",\n        \"containerd\": {\n            \"version\": \"1.4.4\",\n            \"rootDir\": \"/var/lib/containerd\"\n        }\n    },\n    \"networking\": {\n        \"serviceSubnet\": \"10.96.0.0/16\",\n        \"podSubnet\": \"172.25.0.0/24\",\n        \"dnsDomain\": \"cluster.local\"\n    },\n    \"kubeComponents\": {\n        \"kubeProxy\": {\n            \"ipvs\": true\n        },\n        \"etcd\": {},\n        \"cni\": {\n            \"localRegistry\": \"\",\n            \"type\": \"calico\",\n            \"podIPv4CIDR\": \"172.25.0.0/24\",\n            \"podIPv6CIDR\": \"\",\n            \"mtu\": 1440,\n            \"calico\": {\n                \"IPv4AutoDetection\": \"first-found\",\n                \"IPv6AutoDetection\": \"first-found\",\n                \"mode\": \"Overlay-Vxlan-All\",\n                \"dualStack\": false,\n                \"IPManger\": true,\n                \"version\": \"v3.21.2\"\n            }\n        }\n    },\n    \"components\": [\n        {\n            \"name\": \"nfs-provisioner\",\n            \"version\": \"v1\",\n            \"config\": {\n                \"namespace\": \"kube-system\",\n                \"serverAddr\": \"10.0.0.21\",\n                \"sharedPath\": \"/nfs/data\",\n                \"scName\": \"nfs\",\n                \"isDefaultSC\": true,\n                \"archiveOnDelete\": true\n            }\n        },\n        {            \n            \"name\": \"kubesphere\",\n            \"version\": \"v1\",\n            \"config\": {\n                \"version\": \"v3.2.1\",\n                \"jwtSecret\": \"test\",\n                \"clusterRole\": \"host\",\n                \"clusterType\": \"production\",\n                \"storageClass\": \"nfs\",\n                \"console\": {\n                    \"enableMultiLogin\": true,\n                    \"port\":30880\n                },\n                \"monitor\": {\n                    \"prometheusReplicas\": 1,\n                    \"prometheusVolumeSize\": \"20Gi\",\n                    \"alertManagerReplicas\": 1\n                },\n                \"es\": {\n                   \"elasticsearchMasterReplicas\": 1,\n                   \"elasticsearchDataReplicas\": 1,\n                   \"elasticsearchMasterVolumeSize\": \"20Gi\",\n                   \"elasticsearchDataVolumeSize\": \"50Gi\",\n                   \"logMaxAge\": 7,\n                   \"elkPrefix\": \"logstash\"\n                },\n                \"plugin\": {\n                    \"enableEvent\": false,\n                    \"enableDevops\": false,\n                    \"enableLogging\": false,\n                    \"enableAlert\": false,\n                    \"enableNetwork\": false,\n                    \"enableAudit\": false,\n                    \"enableMetricServer\": false,\n                    \"enableServiceMesh\": false,\n                    \"enableAppStore\": false\n                }\n            }\n            \n        }\n    ]\n}",
+        "form": []
+      },
+      "tests": []
+    },
+    {
+      "containerId": "9d849ccf-93a0-47db-aee7-828cb4d816cb",
+      "sortNum": 10000,
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "*/*"
+        },
+        {
+          "name": "User-Agent",
+          "value": "Thunder Client (https://www.thunderclient.io)"
+        }
+      ],
+      "colId": "0db95ab6-cb59-4f22-b981-6fef82298143",
+      "name": "Login",
+      "url": "{{HOST}}:{{PORT}}/oauth/login",
+      "method": "POST",
+      "modified": "2022-03-16T03:28:22.910Z",
+      "created": "2022-03-16T03:28:22.910Z",
+      "_id": "dff50fa3-2732-4029-b388-eec0f65b51b3",
+      "params": [],
+      "body": {
+        "type": "json",
+        "raw": "{\n    \"username\": \"admin\",\n    \"password\": \"Thinkbig1\"\n}",
+        "form": []
+      },
+      "auth": {
+        "type": "none"
+      },
+      "tests": []
+    },
+    {
+      "containerId": "9d849ccf-93a0-47db-aee7-828cb4d816cb",
+      "sortNum": 20000,
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "*/*"
+        },
+        {
+          "name": "User-Agent",
+          "value": "Thunder Client (https://www.thunderclient.io)"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "colId": "0db95ab6-cb59-4f22-b981-6fef82298143",
+      "name": "Logout",
+      "url": "{{HOST}}:{{PORT}}/oauth/logout",
+      "method": "POST",
+      "modified": "2022-03-16T03:28:22.910Z",
+      "created": "2022-03-16T03:28:22.910Z",
+      "_id": "94eed697-7a08-4da9-9e98-d56063c7f158",
+      "params": [],
+      "auth": {
+        "type": "inherit"
+      },
+      "tests": []
+    },
+    {
+      "containerId": "0ac2e8ed-05d0-4399-a194-428c229c6612",
+      "sortNum": 20000,
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "*/*"
+        },
+        {
+          "name": "User-Agent",
+          "value": "Thunder Client (https://www.thunderclient.io)"
+        }
+      ],
+      "colId": "0db95ab6-cb59-4f22-b981-6fef82298143",
+      "name": "DescribeNode",
+      "url": "{{HOST}}:{{PORT}}/api/core.kubeclipper.io/v1/nodes/{node}",
+      "method": "GET",
+      "modified": "2022-03-16T03:28:22.910Z",
+      "created": "2022-03-16T03:28:22.910Z",
+      "_id": "be25ba52-922e-4498-8f6a-a08f0b630cbc",
+      "params": [
+        {
+          "name": "node",
+          "value": "55835b4a-57d9-4537-ba25-e6ea1753a890",
+          "isPath": true
+        }
+      ],
+      "auth": {
+        "type": "bearer",
+        "bearer": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImFkbWluIiwidG9rZW5fdHlwZSI6ImFjY2Vzc190b2tlbiIsImlzcyI6Imt1YmVjbGlwcGVyIiwiZXhwIjoxNjM3NDg5OTY2LCJuYmYiOjE2Mzc0ODI3NjYsImlhdCI6MTYzNzQ4Mjc2Nn0.EoWyuZKbA7wiAP36QHaH3l9mLCWF1wPY7URy1G9y8HI"
+      },
+      "tests": []
+    },
+    {
+      "containerId": "85b2e0b9-3b0f-4543-8281-6ef322e698c3",
+      "sortNum": 30000,
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "*/*"
+        },
+        {
+          "name": "User-Agent",
+          "value": "Thunder Client (https://www.thunderclient.io)"
+        }
+      ],
+      "colId": "0db95ab6-cb59-4f22-b981-6fef82298143",
+      "name": "ListUsers",
+      "url": "{{HOST}}:{{PORT}}/api/iam.kubeclipper.io/v1/users",
+      "method": "GET",
+      "modified": "2022-03-16T03:28:22.910Z",
+      "created": "2022-03-16T03:28:22.910Z",
+      "_id": "30260471-74df-45fe-b648-74d8eba2ead6",
+      "params": [
+        {
+          "name": "role",
+          "value": "platform-admin",
+          "isDisabled": true,
+          "isPath": false
+        },
+        {
+          "name": "labelSelector",
+          "value": "key1 in (value1,value2)",
+          "isDisabled": true,
+          "isPath": false
+        },
+        {
+          "name": "fieldSelector",
+          "value": "status.state=InActive",
+          "isDisabled": true,
+          "isPath": false
+        }
+      ],
+      "tests": []
+    },
+    {
+      "containerId": "85b2e0b9-3b0f-4543-8281-6ef322e698c3",
+      "sortNum": 32500,
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "*/*"
+        },
+        {
+          "name": "User-Agent",
+          "value": "Thunder Client (https://www.thunderclient.io)"
+        }
+      ],
+      "colId": "0db95ab6-cb59-4f22-b981-6fef82298143",
+      "name": "ListUserLoginRecords",
+      "url": "{{HOST}}:{{PORT}}/api/iam.kubeclipper.io/v1/users/{name}/loginrecords",
+      "method": "GET",
+      "modified": "2022-03-16T03:28:22.910Z",
+      "created": "2022-03-16T03:28:22.910Z",
+      "_id": "92d0baaa-2b01-4160-a272-d5210698c6ea",
+      "params": [
+        {
+          "name": "name",
+          "value": "admin",
+          "isPath": true
+        },
+        {
+          "name": "fieldSelector",
+          "value": "ip=127.0.0.1",
+          "isDisabled": true,
+          "isPath": false
+        },
+        {
+          "name": "fieldSelector",
+          "value": "type=Token",
+          "isDisabled": true,
+          "isPath": false
+        }
+      ],
+      "tests": []
+    },
+    {
+      "containerId": "85b2e0b9-3b0f-4543-8281-6ef322e698c3",
+      "sortNum": 35000,
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "*/*"
+        },
+        {
+          "name": "User-Agent",
+          "value": "Thunder Client (https://www.thunderclient.io)"
+        }
+      ],
+      "colId": "0db95ab6-cb59-4f22-b981-6fef82298143",
+      "name": "CheckUserExist",
+      "url": "{{HOST}}:{{PORT}}/api/iam.kubeclipper.io/v1/users?fieldSelector=metadata.name=demo3",
+      "method": "HEAD",
+      "modified": "2022-03-16T03:28:22.910Z",
+      "created": "2022-03-16T03:28:22.910Z",
+      "_id": "ff8917b5-4da0-4a2e-a999-766e25c1383d",
+      "params": [
+        {
+          "name": "labelSelector",
+          "value": "metadata.name=admin",
+          "isDisabled": true,
+          "isPath": false
+        },
+        {
+          "name": "fieldSelector",
+          "value": "metadata.name=demo3",
+          "isPath": false
+        }
+      ],
+      "tests": []
+    },
+    {
+      "containerId": "85b2e0b9-3b0f-4543-8281-6ef322e698c3",
+      "sortNum": 40000,
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "*/*"
+        },
+        {
+          "name": "User-Agent",
+          "value": "Thunder Client (https://www.thunderclient.io)"
+        }
+      ],
+      "colId": "0db95ab6-cb59-4f22-b981-6fef82298143",
+      "name": "GetUserRoleRules",
+      "url": "{{HOST}}:{{PORT}}/api/iam.kubeclipper.io/v1/users/{name}/roles",
+      "method": "GET",
+      "modified": "2022-03-16T03:28:22.910Z",
+      "created": "2022-03-16T03:28:22.910Z",
+      "_id": "60874e03-9cb9-4818-bff4-93ec3537e061",
+      "params": [
+        {
+          "name": "name",
+          "value": "admin",
+          "isPath": true
+        }
+      ],
+      "tests": []
+    },
+    {
+      "containerId": "6aefa217-f7a5-4776-956a-40b615a29e19",
+      "sortNum": 50000,
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "*/*"
+        },
+        {
+          "name": "User-Agent",
+          "value": "Thunder Client (https://www.thunderclient.io)"
+        }
+      ],
+      "colId": "0db95ab6-cb59-4f22-b981-6fef82298143",
+      "name": "ListRoles",
+      "url": "{{HOST}}:{{PORT}}/api/iam.kubeclipper.io/v1/roles?labelSelector=!kubeclipper.io/role-template",
+      "method": "GET",
+      "modified": "2022-03-16T03:28:22.910Z",
+      "created": "2022-03-16T03:28:22.910Z",
+      "_id": "554881cf-fd47-4ca0-a37a-6fd300660459",
+      "params": [
+        {
+          "name": "labelSelector",
+          "value": "!kubeclipper.io/role-template",
+          "isPath": false
+        },
+        {
+          "name": "labelSelector",
+          "value": "kubeclipper.io/role-template",
+          "isDisabled": true,
+          "isPath": false
+        }
+      ],
+      "tests": []
+    },
+    {
+      "containerId": "",
+      "sortNum": 60000,
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "*/*"
+        },
+        {
+          "name": "User-Agent",
+          "value": "Thunder Client (https://www.thunderclient.io)"
+        }
+      ],
+      "colId": "0db95ab6-cb59-4f22-b981-6fef82298143",
+      "name": "Version",
+      "url": "{{HOST}}:{{PORT}}/version",
+      "method": "GET",
+      "modified": "2022-03-16T03:28:22.910Z",
+      "created": "2022-03-16T03:28:22.910Z",
+      "_id": "252aa014-8d51-4e2f-b10d-479d801a21a4",
+      "params": [],
+      "tests": []
+    },
+    {
+      "containerId": "6aefa217-f7a5-4776-956a-40b615a29e19",
+      "sortNum": 65000,
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "*/*"
+        },
+        {
+          "name": "User-Agent",
+          "value": "Thunder Client (https://www.thunderclient.io)"
+        }
+      ],
+      "colId": "0db95ab6-cb59-4f22-b981-6fef82298143",
+      "name": "CheckRoleExist",
+      "url": "{{HOST}}:{{PORT}}/api/iam.kubeclipper.io/v1/roles?fieldSelector=metadata.name=platform-admin",
+      "method": "HEAD",
+      "modified": "2022-03-16T03:28:22.910Z",
+      "created": "2022-03-16T03:28:22.910Z",
+      "_id": "6b7b54c7-bc6f-400c-a0dd-2096e57a78da",
+      "params": [
+        {
+          "name": "fieldSelector",
+          "value": "metadata.name=platform-admin",
+          "isPath": false
+        }
+      ],
+      "tests": []
+    },
+    {
+      "containerId": "",
+      "sortNum": 70000,
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "*/*"
+        },
+        {
+          "name": "User-Agent",
+          "value": "Thunder Client (https://www.thunderclient.io)"
+        }
+      ],
+      "colId": "0db95ab6-cb59-4f22-b981-6fef82298143",
+      "name": "Metrics",
+      "url": "{{HOST}}:{{PORT}}/metrics",
+      "method": "GET",
+      "modified": "2022-03-16T03:28:22.911Z",
+      "created": "2022-03-16T03:28:22.911Z",
+      "_id": "228ad20a-2ccb-4c27-bcf8-5137acb8aff1",
+      "params": [],
+      "tests": []
+    },
+    {
+      "containerId": "",
+      "sortNum": 75000,
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "*/*"
+        },
+        {
+          "name": "User-Agent",
+          "value": "Thunder Client (https://www.thunderclient.io)"
+        }
+      ],
+      "colId": "0db95ab6-cb59-4f22-b981-6fef82298143",
+      "name": "healthz",
+      "url": "{{HOST}}:{{PORT}}/healthz",
+      "method": "GET",
+      "modified": "2022-03-16T03:28:22.911Z",
+      "created": "2022-03-16T03:28:22.911Z",
+      "_id": "fe75a570-86cc-40ca-8a37-a1990c2349e4",
+      "params": [],
+      "tests": []
+    },
+    {
+      "containerId": "6aefa217-f7a5-4776-956a-40b615a29e19",
+      "sortNum": 80000,
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "*/*"
+        },
+        {
+          "name": "User-Agent",
+          "value": "Thunder Client (https://www.thunderclient.io)"
+        }
+      ],
+      "colId": "0db95ab6-cb59-4f22-b981-6fef82298143",
+      "name": "CreateRole",
+      "url": "{{HOST}}:{{PORT}}/api/iam.kubeclipper.io/v1/roles",
+      "method": "POST",
+      "modified": "2022-03-16T03:28:22.911Z",
+      "created": "2022-03-16T03:28:22.911Z",
+      "_id": "91495f93-29b6-4cc6-9a34-7a9db14812d8",
+      "params": [],
+      "body": {
+        "type": "json",
+        "raw": "{\n\t\"kind\": \"GlobalRole\",\n\t\"apiVersion\": \"core.kubeclipper.io/v1\",\n\t\"metadata\": {\n\t\t\"name\": \"demo-view4\",\n\t\t\"annotations\": {\n\t\t\t\"kubeclipper.io/aggregation-roles\": \"[\\\"role-template-view-clusters\\\",\\\"role-template-view-roles\\\",\\\"role-template-create-users\\\",\\\"role-template-view-users\\\",\\\"role-template-view-platform\\\"]\"\n\t\t}\n\t}\n}",
+        "form": []
+      },
+      "tests": []
+    },
+    {
+      "containerId": "",
+      "sortNum": 80000,
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "*/*"
+        },
+        {
+          "name": "User-Agent",
+          "value": "Thunder Client (https://www.thunderclient.io)"
+        }
+      ],
+      "colId": "0db95ab6-cb59-4f22-b981-6fef82298143",
+      "name": "Metrics Copy",
+      "url": "{{HOST}}:8081/k8s/v1.18.6/x86_64/images.tar.gz",
+      "method": "HEAD",
+      "modified": "2022-03-16T03:28:22.911Z",
+      "created": "2022-03-16T03:28:22.911Z",
+      "_id": "9b575cad-5e8b-4be3-a141-314933dabd61",
+      "params": [],
+      "tests": []
+    },
+    {
+      "containerId": "85b2e0b9-3b0f-4543-8281-6ef322e698c3",
+      "sortNum": 90000,
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "*/*"
+        },
+        {
+          "name": "User-Agent",
+          "value": "Thunder Client (https://www.thunderclient.io)"
+        }
+      ],
+      "colId": "0db95ab6-cb59-4f22-b981-6fef82298143",
+      "name": "CreateUser",
+      "url": "{{HOST}}:{{PORT}}/api/iam.kubeclipper.io/v1/users",
+      "method": "POST",
+      "modified": "2022-03-16T03:28:22.911Z",
+      "created": "2022-03-16T03:28:22.911Z",
+      "_id": "7f428b53-1e55-4160-913d-9063757d8395",
+      "params": [],
+      "body": {
+        "type": "json",
+        "raw": "{\n\t\"kind\": \"User\",\n\t\"apiVersion\": \"core.kubeclipper.io/v1\",\n\t\"metadata\": {\n\t\t\"name\": \"demo\",\n\t\t\"labels\": {\n\t\t    \"key1\": \"value2\"\n\t\t},\n\t\t\"annotations\": {\n\t\t\t\"iam.99cloud.io/role\": \"cluster-manager\"\n\t\t}\n\t},\n\t\"spec\": {\n\t\t\"email\": \"demo2@kubeclipper.com\",\n\t\t\"description\": \"Demo View\",\n\t\t\"displayName\": \"Demo2\",\n\t\t\"password\": \"Thinkbig1\",\n\t\t\"phone\": \"18064003675\"\n\t},\n\t\"status\": {}\n}",
+        "form": []
+      },
+      "tests": []
+    },
+    {
+      "containerId": "85b2e0b9-3b0f-4543-8281-6ef322e698c3",
+      "sortNum": 95000,
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "*/*"
+        },
+        {
+          "name": "User-Agent",
+          "value": "Thunder Client (https://www.thunderclient.io)"
+        }
+      ],
+      "colId": "0db95ab6-cb59-4f22-b981-6fef82298143",
+      "name": "UpdateUser",
+      "url": "{{HOST}}:{{PORT}}/api/iam.kubeclipper.io/v1/users/{name}",
+      "method": "PUT",
+      "modified": "2022-03-16T03:28:22.911Z",
+      "created": "2022-03-16T03:28:22.911Z",
+      "_id": "62e1789f-93c5-4093-b512-e990b7c3c619",
+      "params": [
+        {
+          "name": "name",
+          "value": "demo",
+          "isPath": true
+        }
+      ],
+      "body": {
+        "type": "json",
+        "raw": "{\n\t\"kind\": \"User\",\n\t\"apiVersion\": \"core.kubeclipper.io/v1\",\n\t\"metadata\": {\n\t\t\"name\": \"demo\",\n\t\t\"labels\": {\n\t\t    \"key1\": \"value2\"\n\t\t},\n\t\t\"resourceVersion\": \"1081\",\n\t\t\"annotations\": {\n\t\t\t\"iam.99cloud.io/role\": \"platform-admin\"\n\t\t}\n\t},\n\t\"spec\": {\n\t\t\"email\": \"demo2@kubeclipper.com\",\n\t\t\"description\": \"Demo View\",\n\t\t\"displayName\": \"Demo2\",\n\t\t\"password\": \"Thinkbig1\",\n\t\t\"phone\": \"18064003675\"\n\t},\n\t\"status\": {}\n}",
+        "form": []
+      },
+      "tests": []
+    },
+    {
+      "containerId": "85b2e0b9-3b0f-4543-8281-6ef322e698c3",
+      "sortNum": 100000,
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "*/*"
+        },
+        {
+          "name": "User-Agent",
+          "value": "Thunder Client (https://www.thunderclient.io)"
+        }
+      ],
+      "colId": "0db95ab6-cb59-4f22-b981-6fef82298143",
+      "name": "DeleteUser",
+      "url": "{{HOST}}:{{PORT}}/api/iam.kubeclipper.io/v1/users/{name}",
+      "method": "DELETE",
+      "modified": "2022-03-16T03:28:22.911Z",
+      "created": "2022-03-16T03:28:22.911Z",
+      "_id": "a96fea41-d157-4f05-af84-3b038ebe53c6",
+      "params": [
+        {
+          "name": "name",
+          "value": "admin",
+          "isPath": true
+        }
+      ],
+      "tests": []
+    },
+    {
+      "containerId": "6aefa217-f7a5-4776-956a-40b615a29e19",
+      "sortNum": 110000,
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "*/*"
+        },
+        {
+          "name": "User-Agent",
+          "value": "Thunder Client (https://www.thunderclient.io)"
+        }
+      ],
+      "colId": "0db95ab6-cb59-4f22-b981-6fef82298143",
+      "name": "DeleteRole",
+      "url": "{{HOST}}:{{PORT}}/api/iam.kubeclipper.io/v1/roles/{name}",
+      "method": "DELETE",
+      "modified": "2022-03-16T03:28:22.911Z",
+      "created": "2022-03-16T03:28:22.911Z",
+      "_id": "0a9e8b65-21d1-4a86-96a5-53f21dca6ea3",
+      "params": [
+        {
+          "name": "name",
+          "value": "platform-admin",
+          "isPath": true
+        }
+      ],
+      "tests": []
+    },
+    {
+      "containerId": "85b2e0b9-3b0f-4543-8281-6ef322e698c3",
+      "sortNum": 120000,
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "*/*"
+        },
+        {
+          "name": "User-Agent",
+          "value": "Thunder Client (https://www.thunderclient.io)"
+        }
+      ],
+      "colId": "0db95ab6-cb59-4f22-b981-6fef82298143",
+      "name": "EnableUser",
+      "url": "{{HOST}}:{{PORT}}/api/iam.kubeclipper.io/v1/users/{name}/enable",
+      "method": "PUT",
+      "modified": "2022-03-16T03:28:22.911Z",
+      "created": "2022-03-16T03:28:22.911Z",
+      "_id": "9b5a243a-fd37-4b74-87a0-cfd6edc6d196",
+      "params": [
+        {
+          "name": "name",
+          "value": "demo",
+          "isPath": true
+        }
+      ],
+      "tests": []
+    },
+    {
+      "containerId": "85b2e0b9-3b0f-4543-8281-6ef322e698c3",
+      "sortNum": 130000,
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "*/*"
+        },
+        {
+          "name": "User-Agent",
+          "value": "Thunder Client (https://www.thunderclient.io)"
+        }
+      ],
+      "colId": "0db95ab6-cb59-4f22-b981-6fef82298143",
+      "name": "DisableUser",
+      "url": "{{HOST}}:{{PORT}}/api/iam.kubeclipper.io/v1/users/{name}/disable",
+      "method": "PUT",
+      "modified": "2022-03-16T03:28:22.911Z",
+      "created": "2022-03-16T03:28:22.911Z",
+      "_id": "837ba438-e50e-4727-8af1-4b6a6bfb4ffe",
+      "params": [
+        {
+          "name": "name",
+          "value": "demo",
+          "isPath": true
+        }
+      ],
+      "tests": []
+    },
+    {
+      "containerId": "c55e2b64-f30a-4794-b87f-dfa137260376",
+      "sortNum": 140000,
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "*/*"
+        },
+        {
+          "name": "User-Agent",
+          "value": "Thunder Client (https://www.thunderclient.io)"
+        }
+      ],
+      "colId": "0db95ab6-cb59-4f22-b981-6fef82298143",
+      "name": "configz",
+      "url": "{{HOST}}:{{PORT}}/api/config.kubeclipper.io/v1/configz",
+      "method": "GET",
+      "modified": "2022-03-16T03:28:22.911Z",
+      "created": "2022-03-16T03:28:22.911Z",
+      "_id": "56202b7e-0251-41a7-9db0-0ab19da2941f",
+      "params": [],
+      "tests": []
+    },
+    {
+      "containerId": "c55e2b64-f30a-4794-b87f-dfa137260376",
+      "sortNum": 150000,
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "*/*"
+        },
+        {
+          "name": "User-Agent",
+          "value": "Thunder Client (https://www.thunderclient.io)"
+        }
+      ],
+      "colId": "0db95ab6-cb59-4f22-b981-6fef82298143",
+      "name": "ListComponents",
+      "url": "{{HOST}}:{{PORT}}/api/config.kubeclipper.io/v1/components?labelSelector=category==PAAS",
+      "method": "GET",
+      "modified": "2022-03-16T03:28:22.911Z",
+      "created": "2022-03-16T03:28:22.911Z",
+      "_id": "06ad1b65-afab-45e4-ab10-6f5a4c477bc3",
+      "params": [
+        {
+          "name": "labelSelector",
+          "value": "category in (storage,PAAS)",
+          "isDisabled": true,
+          "isPath": false
+        },
+        {
+          "name": "labelSelector",
+          "value": "category!=storage",
+          "isDisabled": true,
+          "isPath": false
+        },
+        {
+          "name": "labelSelector",
+          "value": "category==PAAS",
+          "isPath": false
+        }
+      ],
+      "tests": []
+    },
+    {
+      "containerId": "c55e2b64-f30a-4794-b87f-dfa137260376",
+      "sortNum": 155000,
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "*/*"
+        },
+        {
+          "name": "User-Agent",
+          "value": "Thunder Client (https://www.thunderclient.io)"
+        }
+      ],
+      "colId": "0db95ab6-cb59-4f22-b981-6fef82298143",
+      "name": "ListComponentsMeta",
+      "url": "{{HOST}}:{{PORT}}/api/config.kubeclipper.io/v1/componentmeta",
+      "method": "GET",
+      "modified": "2022-03-17T06:44:48.071Z",
+      "created": "2022-03-17T06:41:25.065Z",
+      "_id": "7a27b81b-9396-487e-bbd6-09e94e457a33",
+      "params": [],
+      "tests": []
+    },
+    {
+      "containerId": "f5255890-2928-4126-9dd4-432987a01084",
+      "sortNum": 160000,
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "*/*"
+        },
+        {
+          "name": "User-Agent",
+          "value": "Thunder Client (https://www.thunderclient.io)"
+        }
+      ],
+      "colId": "0db95ab6-cb59-4f22-b981-6fef82298143",
+      "name": "ListOperations",
+      "url": "{{HOST}}:{{PORT}}/api/core.kubeclipper.io/v1/operations?labelSelector=kubeclipper.io/cluster=test",
+      "method": "GET",
+      "modified": "2022-03-17T08:22:26.754Z",
+      "created": "2022-03-16T03:28:22.911Z",
+      "_id": "0b55aed0-458a-4c3d-ba49-1eea5180fc61",
+      "params": [
+        {
+          "name": "labelSelector",
+          "value": "kubeclipper.io/cluster=test",
+          "isPath": false
+        },
+        {
+          "name": "fieldSelector",
+          "value": "metadata.name=641d1f2f-c3a7-48db-816d-018bde763bf6",
+          "isDisabled": true,
+          "isPath": false
+        }
+      ],
+      "tests": []
+    },
+    {
+      "containerId": "c55e2b64-f30a-4794-b87f-dfa137260376",
+      "sortNum": 160000,
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "*/*"
+        },
+        {
+          "name": "User-Agent",
+          "value": "Thunder Client (https://www.thunderclient.com)"
+        }
+      ],
+      "colId": "0db95ab6-cb59-4f22-b981-6fef82298143",
+      "name": "GetLicense",
+      "url": "{{HOST}}:{{PORT}}/api/config.kubeclipper.io/v1/license",
+      "method": "GET",
+      "modified": "2022-03-16T03:28:22.911Z",
+      "created": "2022-03-16T03:28:22.911Z",
+      "_id": "d4eb86ee-fc17-41f9-9477-68f6061eebcd",
+      "params": [],
+      "tests": []
+    },
+    {
+      "containerId": "c55e2b64-f30a-4794-b87f-dfa137260376",
+      "sortNum": 165000,
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "*/*"
+        },
+        {
+          "name": "User-Agent",
+          "value": "Thunder Client (https://www.thunderclient.com)"
+        }
+      ],
+      "colId": "0db95ab6-cb59-4f22-b981-6fef82298143",
+      "name": "GetTemplate",
+      "url": "{{HOST}}:{{PORT}}/api/config.kubeclipper.io/v1/template",
+      "method": "GET",
+      "modified": "2022-03-29T07:17:53.889Z",
+      "created": "2022-03-29T07:17:40.895Z",
+      "_id": "ee9fe6f4-98be-46f2-813c-3421812fffc3",
+      "params": [],
+      "tests": []
+    },
+    {
+      "containerId": "f5255890-2928-4126-9dd4-432987a01084",
+      "sortNum": 170000,
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "*/*"
+        },
+        {
+          "name": "User-Agent",
+          "value": "Thunder Client (https://www.thunderclient.io)"
+        }
+      ],
+      "colId": "0db95ab6-cb59-4f22-b981-6fef82298143",
+      "name": "List Clusters",
+      "url": "{{HOST}}:{{PORT}}/api/core.kubeclipper.io/v1/clusters",
+      "method": "GET",
+      "modified": "2022-03-16T03:28:22.911Z",
+      "created": "2022-03-16T03:28:22.911Z",
+      "_id": "5d223423-168d-4b87-b21e-2d84208efd9d",
+      "params": [],
+      "tests": []
+    },
+    {
+      "containerId": "c55e2b64-f30a-4794-b87f-dfa137260376",
+      "sortNum": 170000,
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "*/*"
+        },
+        {
+          "name": "User-Agent",
+          "value": "Thunder Client (https://www.thunderclient.com)"
+        }
+      ],
+      "colId": "0db95ab6-cb59-4f22-b981-6fef82298143",
+      "name": "UpdateLicense",
+      "url": "{{HOST}}:{{PORT}}/api/config.kubeclipper.io/v1/license",
+      "method": "PUT",
+      "modified": "2022-03-25T08:54:30.752Z",
+      "created": "2022-03-16T03:28:22.911Z",
+      "_id": "66f10376-57fe-483f-adf9-1a798a592d64",
+      "params": [],
+      "body": {
+        "type": "json",
+        "raw": "{\n    \"license\": \"FT7YCAYBAEDUY2LDMVXHGZIB76BAAAIDAECEIYLUMEAQUAABAFJAD74EAAAQCUYB76CAAAAABL7YGBIBAL7YMAAAAD7ACMX7QIA77RT3EJSW2YLJNQRDUIT2NB2S46DJMFXXOZLJIA4TSY3MN52WILTOMV2CELBCMVXGIIR2EIZDAMRSFUYDKLJRGBKDCMZ2GU3DUMBRFY4DIOJQGY4DOOBYFMYDQORQGARCYITDN5WXAYLOPERDUIXGTSY6NGMT4S6J6IRMEJRXA5JCHIRDCNRQEIWCE3TPMRSSEORCGIYCELBCNVXWI5LMMVZSEORCO5SWELLDN5XHG33MMURCYITQOJXWI5LDOQRDUITDMFQXGIRMEJ3GK4TTNFXW4IR2EI2CELBCNVQWGX3BMRSHEZLTOMRDUIRAEJ6QCMICAJZDYA4K64GVSEXUNIWXVANB47ZNK3WIHYYYCJC56APY2P3PQ4XWLBUQYPPY4OUZKNEUBARCORIEKAJRAJ3AXCDXKQJB2QOJMM7H3K6UHDXMHXJGGFQWYNH5JYA7XLZKHQN6M27EY24G5JB2CAF3UFRE623DVQAA\"\n}",
+        "form": []
+      },
+      "tests": []
+    },
+    {
+      "containerId": "dacdc333-56bd-44ea-90b5-dfab9d4ba9dc",
+      "sortNum": 180000,
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "*/*"
+        },
+        {
+          "name": "User-Agent",
+          "value": "Thunder Client (https://www.thunderclient.io)"
+        }
+      ],
+      "colId": "0db95ab6-cb59-4f22-b981-6fef82298143",
+      "name": "ListAuditEvents",
+      "url": "{{HOST}}:{{PORT}}/api/audit.kubeclipper.io/v1/events?fieldSelector=ip=172.16.1.102,type=",
+      "method": "GET",
+      "modified": "2022-03-16T03:28:22.911Z",
+      "created": "2022-03-16T03:28:22.911Z",
+      "_id": "307799dd-3f4a-4568-8f70-ca2e16456658",
+      "params": [
+        {
+          "name": "fieldSelector",
+          "value": "type!=",
+          "isDisabled": true,
+          "isPath": false
+        },
+        {
+          "name": "fieldSelector",
+          "value": "type=",
+          "isDisabled": true,
+          "isPath": false
+        },
+        {
+          "name": "fieldSelector",
+          "value": "ip=172.16.1.102,type=",
+          "isPath": false
+        }
+      ],
+      "tests": []
+    },
+    {
+      "containerId": "c55e2b64-f30a-4794-b87f-dfa137260376",
+      "sortNum": 180000,
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "*/*"
+        },
+        {
+          "name": "User-Agent",
+          "value": "Thunder Client (https://www.thunderclient.com)"
+        }
+      ],
+      "colId": "0db95ab6-cb59-4f22-b981-6fef82298143",
+      "name": "UpdateTemplate",
+      "url": "{{HOST}}:{{PORT}}/api/config.kubeclipper.io/v1/template",
+      "method": "PUT",
+      "modified": "2022-03-29T07:22:21.356Z",
+      "created": "2022-03-29T07:17:22.411Z",
+      "_id": "4226b1d4-8303-4b4e-8dff-42fcb8a0c203",
+      "params": [],
+      "body": {
+        "type": "json",
+        "raw": "{\n    \"insecureRegistry\": [\n        {\n            \"host\": \"127.0.0.1:5000\",\n            \"description\": \"test registry\"\n        },\n        {\n            \"host\": \"127.0.0.2:5000\",\n            \"description\": \"test2 registry\"\n        }\n    ]\n}",
+        "form": []
+      },
+      "tests": []
+    },
+    {
+      "containerId": "f5255890-2928-4126-9dd4-432987a01084",
+      "sortNum": 190000,
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "*/*"
+        },
+        {
+          "name": "User-Agent",
+          "value": "Thunder Client (https://www.thunderclient.com)"
+        }
+      ],
+      "colId": "0db95ab6-cb59-4f22-b981-6fef82298143",
+      "name": "UpgradeCluster",
+      "url": "{{HOST}}:{{PORT}}/api/core.kubeclipper.io/v1/clusters/{name}/upgrade",
+      "method": "POST",
+      "modified": "2022-03-17T08:21:58.654Z",
+      "created": "2022-03-16T03:28:22.911Z",
+      "_id": "04fbb0d2-3d2f-4c0a-9059-4165e20ff710",
+      "params": [
+        {
+          "name": "name",
+          "value": "test",
+          "isPath": true
+        }
+      ],
+      "body": {
+        "type": "json",
+        "raw": "{\n    \"offline\": true,\n    \"localRegistry\": \"\",\n    \"version\": \"v1.21.9\"\n}",
+        "form": []
+      },
+      "tests": []
+    },
+    {
+      "containerId": "f5255890-2928-4126-9dd4-432987a01084",
+      "sortNum": 200000,
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "*/*"
+        },
+        {
+          "name": "User-Agent",
+          "value": "Thunder Client (https://www.thunderclient.com)"
+        }
+      ],
+      "colId": "0db95ab6-cb59-4f22-b981-6fef82298143",
+      "name": "ListUpgrade",
+      "url": "",
+      "method": "GET",
+      "modified": "2022-03-16T03:28:22.912Z",
+      "created": "2022-03-16T03:28:22.912Z",
+      "_id": "4523c4df-36c3-49f4-8129-f328504125a0"
+    },
+    {
+      "containerId": "f5255890-2928-4126-9dd4-432987a01084",
+      "sortNum": 210000,
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "*/*"
+        },
+        {
+          "name": "User-Agent",
+          "value": "Thunder Client (https://www.thunderclient.com)"
+        }
+      ],
+      "colId": "0db95ab6-cb59-4f22-b981-6fef82298143",
+      "name": "ResetClusterStatus",
+      "url": "{{HOST}}:{{PORT}}/api/core.kubeclipper.io/v1/clusters/{name}/status",
+      "method": "PATCH",
+      "modified": "2022-03-16T03:36:26.614Z",
+      "created": "2022-03-16T03:28:22.912Z",
+      "_id": "d61c2e71-420a-4905-829b-49fcc46e3701",
+      "params": [
+        {
+          "name": "name",
+          "value": "test",
+          "isPath": true
+        },
+        {
+          "name": "dryRun",
+          "value": "false",
+          "isDisabled": true,
+          "isPath": false
+        }
+      ],
+      "tests": []
+    }
+  ],
+  "settings": {
+    "headers": [],
+    "auth": {
+      "type": "bearer",
+      "bearer": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImFkbWluIiwidG9rZW5fdHlwZSI6ImFjY2Vzc190b2tlbiIsImlzcyI6Imt1YmVjbGlwcGVyIiwiZXhwIjoxNjQ4NTQ1NDc0LCJuYmYiOjE2NDg1MzgyNzQsImlhdCI6MTY0ODUzODI3NH0.ukSzZhCZjtBL0-2NMOujlRVDa9jDIio4rF6wubhMO0k"
+    },
+    "tests": []
+  }
+}
