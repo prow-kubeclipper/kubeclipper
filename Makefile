@@ -78,7 +78,7 @@ cleancli:
 	rm -rf $(shell pwd)/tools/kcctldocs-gen/generators/includes
 	rm -rf $(shell pwd)/tools/kcctldocs-gen/generators/build
 	rm -rf $(shell pwd)/tools/kcctldocs-gen/generators/manifest.json
-
+#123
 cli-serve:cli
 	docker stop kcctldocs
 	docker rm -f kcctldocs
