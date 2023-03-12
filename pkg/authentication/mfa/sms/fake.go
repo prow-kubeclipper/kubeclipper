@@ -19,13 +19,10 @@
 package sms
 
 import (
-	"errors"
 	"fmt"
-	"net/http"
 	"net/url"
 	"time"
 
-	"github.com/emicklei/go-restful"
 	"k8s.io/apiserver/pkg/authentication/user"
 
 	"github.com/kubeclipper/kubeclipper/pkg/authentication/mfa"
@@ -68,12 +65,11 @@ type fakeSMSProvider struct {
 func (d *fakeSMSProvider) Verify(req url.Values, user user.Info) error {
 	phone := user.GetExtra()["phone"][0]
 	code := req.Get("code")
-	key := smsCacheKey(FakeSMSProvider, phone, "code")
+
+	key := smsCacheKey(FakeSMSProvider, phone)
+
 	val, err := d.cache.Get(key)
 	if err != nil {
-		if errors.Is(err, cache.ErrNotExists) {
-			return restful.NewError(http.StatusBadRequest, "Verification code has expired")
-		}
 		return err
 	}
 	if val != code {
@@ -92,7 +88,7 @@ func (d *fakeSMSProvider) Request(user user.Info) error {
 	}
 
 	code := generateNumberCode(6)
-	err = d.cache.Set(smsCacheKey(FakeSMSProvider, phone, "code"), code, d.ttl)
+	err = d.cache.Set(smsCacheKey(FakeSMSProvider, phone), code, d.ttl)
 	if err != nil {
 		return err
 	}

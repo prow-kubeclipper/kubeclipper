@@ -21,11 +21,7 @@ package sms
 import (
 	"fmt"
 	"math/rand"
-	"net/http"
-	"strings"
 	"time"
-
-	"github.com/emicklei/go-restful"
 
 	"github.com/kubeclipper/kubeclipper/pkg/simple/client/cache"
 )
@@ -39,8 +35,8 @@ const (
 	smsSendInterval = time.Minute
 )
 
-func smsCacheKey(Type string, exts ...string) string {
-	return fmt.Sprintf("%s-%s", Type, strings.Join(exts, "-"))
+func smsCacheKey(Type, phone string) string {
+	return fmt.Sprintf("%s-%s", Type, phone)
 }
 
 func generateNumberCode(n int) string {
@@ -61,7 +57,7 @@ func rateLimit(kv cache.Interface, key string, expire time.Duration) error {
 		return err
 	}
 	if exist {
-		return restful.NewError(http.StatusTooManyRequests, "verification code was sent too frequently. Please try again later")
+		return ErrSMSRateLimitExceeded
 	}
 	err = kv.Set(key, time.Now().String(), expire)
 	if err != nil {

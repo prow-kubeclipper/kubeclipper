@@ -6,10 +6,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
-	cephcsi "github.com/kubeclipper/kubeclipper/pkg/component/ceph"
-	cindercsi "github.com/kubeclipper/kubeclipper/pkg/component/cinder"
-	"github.com/kubeclipper/kubeclipper/pkg/component/kubesphere"
-
 	nfsprovisioner "github.com/kubeclipper/kubeclipper/pkg/component/nfs"
 	"github.com/kubeclipper/kubeclipper/pkg/component/nfscsi"
 	"github.com/kubeclipper/kubeclipper/pkg/scheme/common"
@@ -19,12 +15,8 @@ import (
 const (
 	nameNFSProvider = "nfs-provisioner"
 	nameNFSCSI      = "nfs-csi"
-	nameCephCSI     = "ceph-csi"
-	nameCinderCSI   = "cinder-csi"
-	nameKubesphere  = "kubesphere"
 
 	Storage = "storage"
-	Paas    = "PAAS"
 )
 
 type addonE2E struct {
@@ -61,33 +53,6 @@ func initAddonList() ([]addonE2E, error) {
 	}
 	list = append(list, v)
 
-	v = addonE2E{
-		name:      nameCephCSI,
-		labels:    initAddonLabelV1(Storage, nameCephCSI),
-		data:      dataList[nameCephCSI],
-		component: nameCephCSI,
-		category:  Storage,
-	}
-	list = append(list, v)
-
-	v = addonE2E{
-		name:      nameCinderCSI,
-		labels:    initAddonLabelV1(Storage, nameCinderCSI),
-		data:      dataList[nameCinderCSI],
-		component: nameCinderCSI,
-		category:  Storage,
-	}
-	list = append(list, v)
-
-	v = addonE2E{
-		name:      nameKubesphere,
-		labels:    initAddonLabelV1(Storage, nameKubesphere),
-		data:      dataList[nameKubesphere],
-		component: nameKubesphere,
-		category:  Paas,
-	}
-	list = append(list, v)
-
 	return list, nil
 }
 
@@ -107,27 +72,6 @@ func initAddonDataList() (map[string][]byte, error) {
 		return nil, err
 	}
 	list[nameNFSCSI] = nfsCsiData
-
-	cephCsi := cephcsi.CephCSI{}
-	cephCsiData, err := json.Marshal(cephCsi)
-	if err != nil {
-		return nil, err
-	}
-	list[nameCephCSI] = cephCsiData
-
-	cinderCsi := cindercsi.Cinder{}
-	cinderCsiData, err := json.Marshal(cinderCsi)
-	if err != nil {
-		return nil, err
-	}
-	list[nameCinderCSI] = cinderCsiData
-
-	ks := kubesphere.Kubesphere{}
-	ksData, err := json.Marshal(ks)
-	if err != nil {
-		return nil, err
-	}
-	list[nameKubesphere] = ksData
 
 	return list, nil
 }
@@ -178,30 +122,6 @@ func editReplace(t *corev1.Template) error {
 			return err
 		}
 		v.Replicas = 3
-		data, err = json.Marshal(v)
-	case nameCephCSI:
-		v := &cephcsi.CephCSI{}
-		err = json.Unmarshal(t.Config.Raw, v)
-		if err != nil {
-			return err
-		}
-		v.Replicas = 3
-		data, err = json.Marshal(v)
-	case nameCinderCSI:
-		v := &cindercsi.Cinder{}
-		err = json.Unmarshal(t.Config.Raw, v)
-		if err != nil {
-			return err
-		}
-		v.Replicas = 3
-		data, err = json.Marshal(v)
-	case nameKubesphere:
-		v := &kubesphere.Kubesphere{}
-		err = json.Unmarshal(t.Config.Raw, v)
-		if err != nil {
-			return err
-		}
-		v.JwtSecret = "update-test"
 		data, err = json.Marshal(v)
 	}
 

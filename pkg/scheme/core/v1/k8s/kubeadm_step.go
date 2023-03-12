@@ -224,7 +224,7 @@ func (runnable *Runnable) makeInstallSteps(metadata *component.ExtraMetadata) ([
 	installSteps = append(installSteps, steps...)
 
 	heal := Health{}
-	steps, err = heal.InitStepper(c.KubernetesVersion).InstallSteps([]v1.StepNode{masters[0]})
+	steps, err = heal.InitStepper().InstallSteps([]v1.StepNode{masters[0]})
 	if err != nil {
 		return nil, err
 	}
@@ -302,7 +302,7 @@ func (runnable *Runnable) makeUninstallSteps(metadata *component.ExtraMetadata) 
 	uninstallSteps = append(uninstallSteps, steps...)
 
 	heal := Health{}
-	steps, err = heal.InitStepper(c.KubernetesVersion).UninstallSteps(&runnable.Networking, nodes...)
+	steps, err = heal.InitStepper().UninstallSteps(&runnable.Networking, nodes...)
 	if err != nil {
 		return nil, err
 	}
@@ -383,7 +383,7 @@ func (stepper *KubeadmConfig) InitStepper(c *v1.Cluster, metadata *component.Ext
 	apiServerDomain := APIServerDomainPrefix + strutil.StringDefaultIfEmpty("cluster.local", c.Networking.DNSDomain)
 	cpEndpoint := fmt.Sprintf("%s:6443", apiServerDomain)
 	if _, ok := c.Labels[common.LabelClusterProviderName]; ok {
-		cpEndpoint = fmt.Sprintf("%s:6443", metadata.Masters[0].NodeIPv4)
+		cpEndpoint = fmt.Sprintf("%s:6443", metadata.Masters[0].IPv4)
 	}
 
 	stepper.ClusterConfigAPIVersion = ""
@@ -398,7 +398,6 @@ func (stepper *KubeadmConfig) InitStepper(c *v1.Cluster, metadata *component.Ext
 	stepper.CertSANs = c.CertSANs
 	stepper.LocalRegistry = c.LocalRegistry
 	stepper.Offline = metadata.Offline
-	stepper.AdvertiseAddress = metadata.Masters[0].NodeIPv4
 
 	return stepper
 }
@@ -437,7 +436,7 @@ func (stepper *KubeadmConfig) JoinSteps(isControlPlane bool, nodes []v1.StepNode
 	}
 	step := v1.Step{
 		ID:         strutil.GetUUID(),
-		Name:       "renderWorkerJoinConfig",
+		Name:       "renderMasterJoinConfig",
 		Timeout:    metav1.Duration{Duration: 1 * time.Minute},
 		ErrIgnore:  false,
 		RetryTimes: 1,
@@ -453,7 +452,7 @@ func (stepper *KubeadmConfig) JoinSteps(isControlPlane bool, nodes []v1.StepNode
 		},
 	}
 	if isControlPlane {
-		step.Name = "renderMasterJoinConfig"
+		step.Name = "renderWorkerJoinConfig"
 	}
 	return []v1.Step{step}, nil
 
@@ -533,11 +532,12 @@ func (stepper *ClusterNode) InitStepper(c *v1.Cluster, metadata *component.Extra
 
 	stepper.NodeRole = ""
 	stepper.WorkerNodeVIP = c.Networking.WorkerNodeVip
-	stepper.Masters = metadata.GetMasterNodeClusterIP()
+	stepper.Masters = metadata.GetMasterNodeIP()
 	stepper.LocalRegistry = c.LocalRegistry
 	stepper.APIServerDomainName = apiServerDomain
-	stepper.JoinMasterIP = metadata.Masters[0].NodeIPv4
+	stepper.JoinMasterIP = metadata.Masters[0].IPv4
 	stepper.EtcdDataPath = c.Etcd.DataDir
+
 	return stepper
 }
 
@@ -557,7 +557,7 @@ func GetKubeConfig(ctx context.Context, name string, node component.Node, delive
 		return "", err
 	}
 
-	kubeConfig.Clusters[name].Server = fmt.Sprintf("https://%s:6443", node.NodeIPv4)
+	kubeConfig.Clusters[name].Server = fmt.Sprintf("https://%s:6443", node.IPv4)
 	config, err := clientcmd.Write(kubeConfig)
 	if err != nil {
 		return "", err
@@ -597,8 +597,7 @@ func (stepper *ClusterNode) UninstallSteps(nodes []v1.StepNode) ([]v1.Step, erro
 	return nil, nil
 }
 
-func (stepper *Health) InitStepper(version string) *Health {
-	stepper.KubernetesVersion = version
+func (stepper *Health) InitStepper() *Health {
 	return stepper
 }
 
@@ -607,11 +606,6 @@ func (stepper *Health) InstallSteps(nodes []v1.StepNode) ([]v1.Step, error) {
 	if err != nil {
 		return nil, err
 	}
-	registerSaCommands, err := stepper.getRegisterServiceAccountCommands()
-	if err != nil {
-		return nil, err
-	}
-
 	return []v1.Step{
 		{
 			ID:         strutil.GetUUID(),
@@ -637,7 +631,16 @@ func (stepper *Health) InstallSteps(nodes []v1.StepNode) ([]v1.Step, error) {
 			RetryTimes: 1,
 			Nodes:      nodes,
 			Action:     v1.ActionInstall,
-			Commands:   registerSaCommands,
+			Commands: []v1.Command{
+				{
+					Type:         v1.CommandShell,
+					ShellCommand: []string{"kubectl", "create", "sa", "kc-server", "-n", "kube-system"},
+				},
+				{
+					Type:         v1.CommandShell,
+					ShellCommand: []string{"kubectl", "create", "clusterrolebinding", "kc-server", "--clusterrole=cluster-admin", "--serviceaccount=kube-system:kc-server"},
+				},
+			},
 		}}, nil
 }
 
@@ -914,10 +917,7 @@ func PatchTaintAndLabelStep(master, workers v1.WorkerNodeList, metadata *compone
 				RetryTimes: 1,
 				Nodes: []v1.StepNode{
 					{
-						ID:       metadata.Masters[0].ID,
-						IPv4:     metadata.Masters[0].IPv4,
-						NodeIPv4: metadata.Masters[0].NodeIPv4,
-						Hostname: metadata.GetMasterHostname(metadata.Masters[0].ID),
+						ID: metadata.Masters[0].ID, IPv4: metadata.Masters[0].IPv4, Hostname: metadata.GetMasterHostname(metadata.Masters[0].ID),
 					},
 				},
 				Commands: shellCommand,

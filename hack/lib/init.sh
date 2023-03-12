@@ -9,7 +9,6 @@ KUBE_OUTPUT="${KUBE_ROOT}/dist"
 #KUBE_GIT_VERSION_FILE="${KUBE_ROOT}/VERSION"
 source "${KUBE_ROOT}/hack/lib/logging.sh"
 source "${KUBE_ROOT}/hack/lib/version.sh"
-source "${KUBE_ROOT}/hack/lib/args.sh"
 source "${KUBE_ROOT}/hack/lib/golang.sh"
 
 

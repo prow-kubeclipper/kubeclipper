@@ -209,66 +209,6 @@
         }
       }
     },
-    "/api/config.kubeclipper.io/v1/license": {
-      "get": {
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Core-Config"
-        ],
-        "summary": "Information about license",
-        "operationId": "DescribeLicense",
-        "responses": {
-          "200": {
-            "description": "OK",
-            "schema": {
-              "$ref": "#/definitions/license.LicenseInfo"
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "schema": {
-              "$ref": "#/definitions/errors.HTTPError"
-            }
-          }
-        }
-      },
-      "put": {
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Core-Config"
-        ],
-        "summary": "Update license",
-        "operationId": "UpdateLicense",
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/v1.LicenseRequest"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "schema": {
-              "$ref": "#/definitions/license.LicenseInfo"
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "schema": {
-              "$ref": "#/definitions/errors.HTTPError"
-            }
-          }
-        }
-      }
-    },
     "/api/config.kubeclipper.io/v1/oauth": {
       "get": {
         "produces": [
@@ -5354,85 +5294,6 @@
     "kc.ComponentMeta.rules": {
       "type": "object"
     },
-    "license.LicenseInfo": {
-      "required": [
-        "company",
-        "cpu",
-        "node",
-        "cpu_used",
-        "node_used",
-        "product",
-        "version",
-        "mac_address",
-        "systemVersion",
-        "systemProduct",
-        "license",
-        "modules",
-        "valid"
-      ],
-      "properties": {
-        "company": {
-          "description": "do not input auto generator, license company info",
-          "type": "string"
-        },
-        "cpu": {
-          "description": "do not input auto generator, license cpu limit info",
-          "type": "string"
-        },
-        "cpu_used": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "end": {
-          "description": "do not input auto generator, license expired date",
-          "type": "string"
-        },
-        "license": {
-          "description": "do not input auto generator, license string",
-          "type": "string"
-        },
-        "mac_address": {
-          "description": "do not input auto generator, license mac address info",
-          "type": "string"
-        },
-        "modules": {
-          "description": "do not input auto generator, such as-\u003e modules:web-console",
-          "type": "string"
-        },
-        "node": {
-          "description": "do not input auto generator, license node limit info",
-          "type": "string"
-        },
-        "node_used": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "product": {
-          "description": "do not input auto generator, license production info",
-          "type": "string"
-        },
-        "reason": {
-          "description": "do not input auto generator, license check failed root cause",
-          "type": "string"
-        },
-        "systemProduct": {
-          "description": "do not input auto generator, license system product info",
-          "type": "string"
-        },
-        "systemVersion": {
-          "description": "do not input auto generator, license system version info",
-          "type": "string"
-        },
-        "valid": {
-          "description": "do not input auto generator, license is valid",
-          "type": "boolean"
-        },
-        "version": {
-          "description": "do not input auto generator, license version info",
-          "type": "string"
-        }
-      }
-    },
     "map[string]bool": {
       "type": "object",
       "additionalProperties": {
@@ -6429,16 +6290,6 @@
       ],
       "properties": {
         "rootDir": {
-          "type": "string"
-        }
-      }
-    },
-    "v1.LicenseRequest": {
-      "required": [
-        "license"
-      ],
-      "properties": {
-        "license": {
           "type": "string"
         }
       }

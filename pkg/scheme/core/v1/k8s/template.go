@@ -90,9 +90,6 @@ volumeStatsAggPeriod: 1m
 ---
 apiVersion: kubeadm.k8s.io/{{.ClusterConfigAPIVersion}}
 kind: InitConfiguration
-localAPIEndpoint:
-  advertiseAddress: {{.AdvertiseAddress}}
-  bindPort: 6443
 nodeRegistration:
 {{- if .Kubelet.IPAsName }}
   name: "{{.Kubelet.NodeIP}}"
@@ -102,7 +99,6 @@ nodeRegistration:
 {{end}}
   kubeletExtraArgs:
     root-dir: {{.Kubelet.RootDir}}
-    node-ip: {{.Kubelet.NodeIP}}
 `
 
 const KubeadmJoinTemplate = `apiVersion: kubeadm.k8s.io/{{.ClusterConfigAPIVersion}}
@@ -117,9 +113,6 @@ discovery:
 {{- if .IsControlPlane}}
 controlPlane: 
   certificateKey: {{.CertificateKey}}{{end}}
-  localAPIEndpoint:
-    advertiseAddress: {{.Kubelet.NodeIP}}
-    bindPort: 6443
 nodeRegistration:
 {{- if .Kubelet.IPAsName }}
   name: "{{.Kubelet.NodeIP}}"
@@ -128,8 +121,7 @@ nodeRegistration:
   criSocket: /run/containerd/containerd.sock
 {{end}}
   kubeletExtraArgs:
-    root-dir: {{.Kubelet.RootDir}}
-    node-ip: {{.Kubelet.NodeIP}}`
+    root-dir: {{.Kubelet.RootDir}}`
 
 const lvscareV111 = `
 apiVersion: v1

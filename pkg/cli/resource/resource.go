@@ -32,6 +32,7 @@ import (
 
 	"github.com/kubeclipper/kubeclipper/pkg/scheme"
 
+	"github.com/kubeclipper/kubeclipper/pkg/utils/cmdutil"
 	"github.com/kubeclipper/kubeclipper/pkg/utils/httputil"
 
 	"github.com/spf13/cobra"
@@ -407,20 +408,12 @@ func (o *ResourceOptions) ResourcePush() error {
 		return err
 	}
 	if _, ok := httputil.IsURL(o.Pkg); !ok {
-		ls, err := sshutils.RunCmdAsSSH(fmt.Sprintf("ls -l %s", o.Pkg))
+		ec, err := cmdutil.RunCmd(false, "tar", "-tf", o.Pkg)
 		if err != nil {
 			return err
 		}
-		if ls.Stderr != "" {
-			return fmt.Errorf("%s file does not exist", o.Pkg)
-		}
-
-		tar, err := sshutils.RunCmdAsSSH(fmt.Sprintf("tar -tf %s", o.Pkg))
-		if err != nil {
-			return err
-		}
-		if !strings.Contains(tar.Stdout, fmt.Sprintf("%s/%s", version, arch)) {
-			return fmt.Errorf("package structure(%s) Non-standard. standard : 'version/arch/file' example: v4.0.2/amd64/images.tar.gz", tar.Stdout)
+		if !strings.Contains(ec.StdOut(), fmt.Sprintf("%s/%s", version, arch)) {
+			return fmt.Errorf("package structure(%s) Non-standard. standard : 'version/arch/file' example: v4.0.2/amd64/images.tar.gz", ec.StdOut())
 		}
 	}
 

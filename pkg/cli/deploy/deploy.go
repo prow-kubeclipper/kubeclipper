@@ -40,9 +40,12 @@ import (
 	"text/template"
 	"time"
 
+	"k8s.io/component-base/version"
+
+	"github.com/kubeclipper/kubeclipper/pkg/utils/strutil"
+
 	"github.com/google/uuid"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/component-base/version"
 
 	"github.com/kubeclipper/kubeclipper/pkg/constatns"
 	v1 "github.com/kubeclipper/kubeclipper/pkg/scheme/core/v1"
@@ -50,7 +53,6 @@ import (
 
 	"github.com/kubeclipper/kubeclipper/pkg/utils/autodetection"
 	"github.com/kubeclipper/kubeclipper/pkg/utils/netutil"
-	"github.com/kubeclipper/kubeclipper/pkg/utils/strutil"
 
 	"k8s.io/apimachinery/pkg/util/sets"
 
@@ -71,9 +73,18 @@ import (
 	certutils "github.com/kubeclipper/kubeclipper/pkg/utils/certs"
 )
 
-var (
-	PkgURL        = "https://github.com/kubeclipper/kubeclipper/release/"
-	deployExample = fmt.Sprintf(`
+const (
+	longDescription = `
+  Deploy Kubeclipper Platform from deploy-config.yaml or cmd flags.
+
+  Kubeclipper Platform must have one kc-server node at lease, kc-server use etcd as db backend.
+  So the number of kc-server nodes must be odd
+
+  If you want to deploy kc-server and kc-agent on the same node, it is better to change etcd port configuration,
+  in order to be able to deploy k8s on this node
+
+  Now only support offline install, so the --pkg parameter must be valid`
+	deployExample = `
   # Deploy All-In-One use local host, etcd port will be set automatically. (client-12379 | peer-12380 | metrics-12381)
   kcctl deploy
 
@@ -87,43 +98,24 @@ var (
   kcctl deploy --server 192.168.234.3 --agent 192.168.234.3 --pk-file ~/.ssh/id_rsa --pkg kc-minimal.tar.gz
 
   # Deploy env use remove http/https resource server
-  kcctl deploy --server 192.168.234.3 --agent 192.168.234.3 --pk-file ~/.ssh/id_rsa --pkg %skc-minimal.tar.gz
+  kcctl deploy --server 192.168.234.3 --agent 192.168.234.3 --pk-file ~/.ssh/id_rsa --pkg https://oss.kubeclipper.io/release/v1.3.1/kc-amd64.tar.gz
 
   # Deploy env with many agent node in same region.
-  kcctl deploy --server 192.168.234.3 --agent us-west-1:192.168.10.123,192.168.10.124  --pk-file ~/.ssh/id_rsa --pkg %skc-minimal.tar.gz
+  kcctl deploy --server 192.168.234.3 --agent us-west-1:192.168.10.123,192.168.10.124  --pk-file ~/.ssh/id_rsa --pkg https://oss.kubeclipper.io/release/v1.3.1/kc-amd64.tar.gz
 
   # Deploy env with many agent node in different region.
-  kcctl deploy --server 192.168.234.3 --agent us-west-1:1.1.1.1,1.1.1.2 --agent us-west-2:1.1.1.3 --pk-file ~/.ssh/id_rsa --pkg %skc-minimal.tar.gz
+  kcctl deploy --server 192.168.234.3 --agent us-west-1:1.1.1.1,1.1.1.2 --agent us-west-2:1.1.1.3 --pk-file ~/.ssh/id_rsa --pkg https://oss.kubeclipper.io/release/v1.3.1/kc-amd64.tar.gz
 
   # Deploy env with many agent node which has orderly ip.
   # this will add 10 agent,1.1.1.1, 1.1.1.2, ... 1.1.1.10.
-  kcctl deploy --server 192.168.234.3 --agent us-west-1:1.1.1.1-1.1.1.10 --pk-file ~/.ssh/id_rsa --pkg %skc-minimal.tar.gz
-
-  # Deploy env with many agent nodes and specify ip detect method for these nodes
-  kcctl deploy --server 192.168.234.3 --agent 192.168.234.3,192.168.234.4 --ip-detect=interface=eth0 --pk-file ~/.ssh/id_rsa --pkg %skc-minimal.tar.gz
-
-  # Deploy env with many agent nodes and specify node ip detect method for these nodes, used for routing between nodes in the kubernetes cluster
-  kcctl deploy --server 192.168.234.3 --agent 192.168.234.3,192.168.234.4 --node-ip-detect=interface=eth1 --pk-file ~/.ssh/id_rsa --pkg %skc-minimal.tar.gz
+  kcctl deploy --server 192.168.234.3 --agent us-west-1:1.1.1.1-1.1.1.10 --pk-file ~/.ssh/id_rsa --pkg https://oss.kubeclipper.io/release/v1.3.1/kc-amd64.tar.gz
 
   # Deploy from config.
   kcctl deploy --deploy-config deploy-config.yaml
   # Deploy and config fip to agent node.
   kcctl deploy --server 172.20.149.198 --agent us-west-1:10.0.0.10 --agent us-west-2:20.0.0.11 --fip 10.0.0.10:172.20.149.199 --fip 20.0.0.11:172.20.149.200
 
-  Please read 'kcctl deploy -h' get more deploy flags`, PkgURL, PkgURL, PkgURL, PkgURL, PkgURL, PkgURL)
-)
-
-const (
-	longDescription = `
-  Deploy Kubeclipper Platform from deploy-config.yaml or cmd flags.
-
-  Kubeclipper Platform must have one kc-server node at lease, kc-server use etcd as db backend.
-  So the number of kc-server nodes must be odd
-
-  If you want to deploy kc-server and kc-agent on the same node, it is better to change etcd port configuration,
-  in order to be able to deploy k8s on this node
-
-  Now only support offline install, so the --pkg parameter must be valid`
+  Please read 'kcctl deploy -h' get more deploy flags`
 	defaultPkg = "https://oss.kubeclipper.io/release/%s/kc-%s.tar.gz"
 )
 
@@ -227,11 +219,6 @@ func (d *DeployOptions) Complete() error {
 		}
 	}
 
-	if d.deployConfig.NodeIPDetect == "" {
-		logger.Infof("node-ip-detect inherits from ip-detect: %s", d.deployConfig.IPDetect)
-		d.deployConfig.NodeIPDetect = d.deployConfig.IPDetect
-	}
-
 	if d.aio {
 		logger.Infof("run in aio mode.")
 	}
@@ -249,9 +236,6 @@ func (d *DeployOptions) ValidateArgs() error {
 
 	if d.deployConfig.IPDetect != "" && !autodetection.CheckMethod(d.deployConfig.IPDetect) {
 		return fmt.Errorf("invalid ip detect method,suppot [first-found,interface=xxx,cidr=xxx] now")
-	}
-	if d.deployConfig.NodeIPDetect != "" && !autodetection.CheckMethod(d.deployConfig.NodeIPDetect) {
-		return fmt.Errorf("invalid node ip detect method,suppot [first-found,interface=xxx,cidr=xxx] now")
 	}
 	if d.deployConfig.Pkg == "" {
 		return fmt.Errorf("--pkg must be specified")

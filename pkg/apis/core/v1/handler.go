@@ -47,7 +47,6 @@ import (
 
 	"github.com/kubeclipper/kubeclipper/pkg/client/clientrest"
 	"github.com/kubeclipper/kubeclipper/pkg/clustermanage"
-	"github.com/kubeclipper/kubeclipper/pkg/clustermanage/rancher"
 	"github.com/kubeclipper/kubeclipper/pkg/component"
 	"github.com/kubeclipper/kubeclipper/pkg/controller"
 	"github.com/kubeclipper/kubeclipper/pkg/controller-runtime/client"
@@ -93,6 +92,10 @@ const (
 	ParameterCols              = "cols"
 	ParameterRows              = "rows"
 	resourceExistCheckerHeader = "X-CHECK-EXIST"
+)
+
+var (
+	ErrNodesRegionDifferent = errors.New("nodes belongs to different region")
 )
 
 func newHandler(clusterOperator cluster.Operator, op operation.Operator, leaseOperator lease.Operator,
@@ -174,7 +177,7 @@ func (h *handler) AddOrRemoveNodes(request *restful.Request, response *restful.R
 	nodeSet := c.GetAllNodes()
 
 	// We need IP addresses of all master nodes later.
-	extraMeta, err := GetClusterMetadata(ctx, h.clusterOperator, c, false)
+	extraMeta, err := h.getClusterMetadata(ctx, c, false)
 	if err != nil {
 		if apimachineryErrors.IsNotFound(err) || err == ErrNodesRegionDifferent {
 			restplus.HandleBadRequest(response, request, err)
@@ -195,7 +198,7 @@ func (h *handler) AddOrRemoveNodes(request *restful.Request, response *restful.R
 
 	// Get workers node information must be called before pn.MakeCompare, in order to ensure pn.Nodes = extraMeta.Workers.
 	// Replace cluster worker nodes with nodes to be operated.
-	nodes, err := GetNodeInfo(ctx, h.clusterOperator, pn.Nodes, false)
+	nodes, err := h.getNodeInfo(ctx, pn.Nodes, false)
 	if err != nil {
 		if err == ErrNodesRegionDifferent {
 			restplus.HandleBadRequest(response, request, err)
@@ -241,7 +244,7 @@ func (h *handler) AddOrRemoveNodes(request *restful.Request, response *restful.R
 		}
 	}
 
-	op, err := pn.MakeOperation(*extraMeta, c, h.clusterOperator)
+	op, err := pn.MakeOperation(*extraMeta, c)
 	if err != nil {
 		if errors.Is(err, ErrZeroNode) {
 			// No node needs to be operated.
@@ -331,7 +334,6 @@ func (h *handler) DeleteCluster(request *restful.Request, response *restful.Resp
 		restplus.HandleBadRequest(response, request, errors.New("can't delete cluster which belongs to provider"))
 		return
 	}
-
 	if !allowedDeleteStatus.Has(string(c.Status.Phase)) {
 		restplus.HandleBadRequest(response, request, fmt.Errorf("can't delete cluster when cluster is %s", c.Status.Phase))
 		return
@@ -349,7 +351,7 @@ func (h *handler) DeleteCluster(request *restful.Request, response *restful.Resp
 		return
 	}
 
-	extraMeta, err := GetClusterMetadata(request.Request.Context(), h.clusterOperator, c, force)
+	extraMeta, err := h.getClusterMetadata(request.Request.Context(), c, force)
 	if err != nil {
 		if apimachineryErrors.IsNotFound(err) || err == ErrNodesRegionDifferent {
 			restplus.HandleBadRequest(response, request, err)
@@ -373,7 +375,7 @@ func (h *handler) DeleteCluster(request *restful.Request, response *restful.Resp
 	}
 
 	extraMeta.OperationType = v1.OperationDeleteCluster
-	op, err := ParseOperationFromCluster(h.clusterOperator, extraMeta, c, v1.ActionUninstall)
+	op, err := h.parseOperationFromCluster(extraMeta, c, v1.ActionUninstall)
 	if err != nil {
 		restplus.HandleInternalError(response, request, err)
 		return
@@ -446,7 +448,7 @@ func (h *handler) CreateClusters(request *restful.Request, response *restful.Res
 	}
 	c.Complete()
 	// validate node exist
-	extraMeta, err := GetClusterMetadata(request.Request.Context(), h.clusterOperator, &c, false)
+	extraMeta, err := h.getClusterMetadata(request.Request.Context(), &c, false)
 	if err != nil {
 		if apimachineryErrors.IsNotFound(err) || err == ErrNodesRegionDifferent {
 			restplus.HandleBadRequest(response, request, err)
@@ -468,7 +470,7 @@ func (h *handler) CreateClusters(request *restful.Request, response *restful.Res
 	}
 
 	extraMeta.OperationType = v1.OperationCreateCluster
-	op, err := ParseOperationFromCluster(h.clusterOperator, extraMeta, &c, v1.ActionInstall)
+	op, err := h.parseOperationFromCluster(extraMeta, &c, v1.ActionInstall)
 	if err != nil {
 		restplus.HandleInternalError(response, request, err)
 		return
@@ -550,12 +552,12 @@ func (h *handler) UpdateClusterCertification(request *restful.Request, response 
 		return
 	}
 
-	extraMeta, err := GetClusterMetadata(ctx, h.clusterOperator, c, false)
+	extraMeta, err := h.getClusterMetadata(ctx, c, false)
 	if err != nil {
 		restplus.HandleBadRequest(response, request, err)
 		return
 	}
-	op, err := ParseUpdateCertOperation(c, extraMeta)
+	op, err := h.parseUpdateCertOperation(c, extraMeta)
 	if err != nil {
 		restplus.HandleBadRequest(response, request, err)
 		return
@@ -594,7 +596,7 @@ func (h *handler) GetKubeConfig(request *restful.Request, response *restful.Resp
 		restplus.HandleInternalError(response, request, err)
 		return
 	}
-	extraMeta, err := GetClusterMetadata(ctx, h.clusterOperator, clu, false)
+	extraMeta, err := h.getClusterMetadata(ctx, clu, false)
 	if err != nil {
 		restplus.HandleInternalError(response, request, err)
 		return
@@ -836,6 +838,76 @@ func (h *handler) watchOperations(req *restful.Request, resp *restful.Response, 
 		return
 	}
 	restplus.ServeWatch(watcher, v1.SchemeGroupVersion.WithKind("Operation"), req, resp, timeout)
+}
+
+func (h *handler) getClusterMetadata(ctx context.Context, c *v1.Cluster, skipNodeNotFound bool) (*component.ExtraMetadata, error) {
+	meta := &component.ExtraMetadata{
+		ClusterName:        c.Name,
+		Offline:            c.Offline(),
+		LocalRegistry:      c.LocalRegistry,
+		CRI:                c.ContainerRuntime.Type,
+		KubeVersion:        c.KubernetesVersion,
+		KubeletDataDir:     c.Kubelet.RootDir,
+		ControlPlaneStatus: c.Status.ControlPlaneHealth,
+		CNI:                c.CNI.Type,
+		CNINamespace:       c.CNI.Namespace,
+	}
+
+	meta.Addons = append(meta.Addons, c.Addons...)
+
+	masters, err := h.getNodeInfo(ctx, c.Masters, skipNodeNotFound)
+	if err != nil {
+		return nil, err
+	}
+	meta.Masters = append(meta.Masters, masters...)
+	workers, err := h.getNodeInfo(ctx, c.Workers, skipNodeNotFound)
+	if err != nil {
+		return nil, err
+	}
+	meta.Workers = append(meta.Workers, workers...)
+	err = h.regionCheck(meta.Masters, meta.Workers)
+	if err != nil {
+		return nil, err
+	}
+	return meta, nil
+}
+
+func (h *handler) regionCheck(master, worker []component.Node) error {
+	list := sets.NewString()
+	for _, node := range master {
+		list.Insert(node.Region)
+	}
+	for _, node := range worker {
+		list.Insert(node.Region)
+	}
+	if list.Len() > 1 {
+		return ErrNodesRegionDifferent
+	}
+	return nil
+}
+
+func (h *handler) getNodeInfo(ctx context.Context, nodes v1.WorkerNodeList, skipNodeNotFound bool) ([]component.Node, error) {
+	var meta []component.Node
+	for _, node := range nodes {
+		n, err := h.clusterOperator.GetNodeEx(ctx, node.ID, "0")
+		if err != nil {
+			if skipNodeNotFound && apimachineryErrors.IsNotFound(err) {
+				continue
+			}
+			return nil, err
+		}
+		item := component.Node{
+			ID:       n.Name,
+			IPv4:     n.Status.Ipv4DefaultIP,
+			Region:   n.Labels[common.LabelTopologyRegion],
+			Hostname: n.Labels[common.LabelHostname],
+			Role:     n.Labels[common.LabelNodeRole],
+		}
+		_, item.Disable = n.Labels[common.LabelNodeDisable]
+		meta = append(meta, item)
+	}
+
+	return meta, nil
 }
 
 func (h *handler) GetOperationLog(request *restful.Request, response *restful.Response) {
@@ -1216,7 +1288,7 @@ func (h *handler) CreateBackup(request *restful.Request, response *restful.Respo
 	}
 
 	if !dryRun {
-		op.Steps, err = ParseActBackupSteps(h.clusterOperator, c, backup, v1.ActionInstall)
+		op.Steps, err = h.parseActBackupSteps(c, backup, v1.ActionInstall)
 		if err != nil {
 			logger.Errorf("parse create backup step failed: %s", err.Error())
 			restplus.HandleInternalError(response, request, err)
@@ -1297,7 +1369,7 @@ func (h *handler) DeleteBackup(request *restful.Request, response *restful.Respo
 			return
 		}
 		// build the backup steps instance
-		op.Steps, err = ParseActBackupSteps(h.clusterOperator, c, b, v1.ActionUninstall)
+		op.Steps, err = h.parseActBackupSteps(c, b, v1.ActionUninstall)
 		if err != nil {
 			logger.Errorf("delete backup step parse failed: %s", err.Error())
 			restplus.HandleInternalError(response, request, err)
@@ -1563,7 +1635,7 @@ func (h *handler) CreateRecovery(request *restful.Request, response *restful.Res
 	o.Labels[common.LabelTopologyRegion] = c.Masters[0].Labels[common.LabelTopologyRegion]
 	o.Status.Status = v1.OperationStatusRunning
 	restoreDir := filepath.Join("/var/lib/kube-restore", c.Name)
-	steps, err := ParseRecoverySteps(h.clusterOperator, c, b, restoreDir, v1.ActionInstall)
+	steps, err := h.parseRecoverySteps(c, b, restoreDir, v1.ActionInstall)
 	if err != nil {
 		restplus.HandleInternalError(response, request, fmt.Errorf("recovery failed: %v", err))
 		return
@@ -1627,7 +1699,7 @@ func (h *handler) InstallOrUninstallPlugins(request *restful.Request, response *
 		return
 	}
 	// We need IP addresses of all master nodes later.
-	extraMeta, err := GetClusterMetadata(ctx, h.clusterOperator, clu, false)
+	extraMeta, err := h.getClusterMetadata(ctx, clu, false)
 	if err != nil {
 		if apimachineryErrors.IsNotFound(err) || err == ErrNodesRegionDifferent {
 			restplus.HandleBadRequest(response, request, err)
@@ -1636,7 +1708,7 @@ func (h *handler) InstallOrUninstallPlugins(request *restful.Request, response *
 		restplus.HandleInternalError(response, request, err)
 		return
 	}
-	if err = pcs.CheckComponents(clu); err != nil {
+	if err = pcs.checkComponents(clu); err != nil {
 		restplus.HandleBadRequest(response, request, err)
 		return
 	}
@@ -1645,7 +1717,7 @@ func (h *handler) InstallOrUninstallPlugins(request *restful.Request, response *
 		action = v1.ActionUninstall
 		operationAction = v1.OperationUninstallComponents
 	}
-	op, err := ParseOperationFromComponent(ctx, h.clusterOperator, extraMeta, pcs.Addons, clu, action)
+	op, err := h.parseOperationFromComponent(ctx, extraMeta, pcs.Addons, clu, action)
 	if err != nil {
 		restplus.HandleInternalError(response, request, err)
 		return
@@ -1705,7 +1777,7 @@ func (h *handler) InstallOrUninstallPlugins(request *restful.Request, response *
 				logger.Error("get the latest cluster info error", zap.Error(err))
 				return
 			}
-			newCluster, err := oPcs.AddOrRemoveComponentFromCluster(latestCluster)
+			newCluster, err := oPcs.addOrRemoveComponentFromCluster(latestCluster)
 			if err != nil {
 				logger.Error("add or remove component from cluster", zap.Error(err))
 				return
@@ -1742,7 +1814,7 @@ func (h *handler) UpgradeCluster(request *restful.Request, response *restful.Res
 	if v := request.QueryParameter("timeout"); v != "" {
 		timeoutSecs = v
 	}
-	extraMeta, err := GetClusterMetadata(request.Request.Context(), h.clusterOperator, clu, false)
+	extraMeta, err := h.getClusterMetadata(request.Request.Context(), clu, false)
 	if err != nil {
 		if apimachineryErrors.IsNotFound(err) || err == ErrNodesRegionDifferent {
 			restplus.HandleBadRequest(response, request, err)
@@ -2704,7 +2776,7 @@ func (h *handler) DeleteBackupPoint(request *restful.Request, response *restful.
 		restplus.HandleInternalError(response, request, err)
 		return
 	}
-	if ok := CheckBackupPointInUse(backups, name); ok {
+	if ok := h.checkBackupPointInUse(backups, name); ok {
 		restplus.HandleInternalError(response, request, errors.New("backup point is in use, please delete backup first"))
 		return
 	}
@@ -3247,30 +3319,6 @@ func (h *handler) CreateCloudProvider(req *restful.Request, resp *restful.Respon
 func (h *handler) providerValidate(ctx context.Context, cp *v1.CloudProvider) error {
 	if cp.SSH.PrivateKey != "" && cp.SSH.Password != "" {
 		return errors.New("can't specify both password and privateKey")
-	}
-	if cp.Type == rancher.ProviderRancher {
-		q := query.New()
-		q.FieldSelector = fmt.Sprintf("type=%s", rancher.ProviderRancher)
-		providers, err := h.clusterOperator.ListCloudProviders(ctx, q)
-		if err != nil {
-			return err
-		}
-		currentConf, err := rancher.ParseConf(cp.Config)
-		if err != nil {
-			return err
-		}
-		for _, provider := range providers.Items {
-			conf, err := rancher.ParseConf(provider.Config)
-			if err != nil {
-				return err
-			}
-			if cp.Name == provider.Name {
-				continue
-			}
-			if currentConf.APIEndpoint == conf.APIEndpoint {
-				return fmt.Errorf("apiEndpoint duplicate with provider %s", provider.Name)
-			}
-		}
 	}
 	return nil
 }

@@ -27,9 +27,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kubeclipper/kubeclipper/pkg/clustermanage/rancher"
 	"github.com/kubeclipper/kubeclipper/pkg/controller"
+
 	"github.com/kubeclipper/kubeclipper/pkg/oplog"
+
 	"github.com/kubeclipper/kubeclipper/pkg/scheme/common"
 
 	"github.com/kubeclipper/kubeclipper/pkg/component"
@@ -219,56 +220,8 @@ func (s *Service) SyncClusterCondition(op *v1.Operation) {
 		if err = s.syncClusterCondition(op, clu); err != nil {
 			continue
 		}
-
-		providerName, ok := op.Labels[common.LabelClusterProviderName]
-		if ok {
-			if err = s.syncNodeAnnotations(op, clu, providerName); err != nil {
-				logger.Error("syncNodeAnnotations failed", zap.String("name", clu.Name), zap.String("operation", op.Name), zap.Error(err))
-				continue
-			}
-		}
-
 		return
 	}
-}
-
-func (s *Service) syncNodeAnnotations(op *v1.Operation, clu *v1.Cluster, providerName string) error {
-	// 	sync provider
-	provider, err := s.clusterOperator.GetCloudProvider(context.TODO(), providerName)
-	if err != nil {
-		logger.Error("get cloud provider failed", zap.String("name", providerName), zap.String("operation", op.Name), zap.Error(err))
-		return err
-	}
-	client, err := rancher.NewRancherClient(provider.Config)
-	if err != nil {
-		logger.Error("cloud provider to client failed", zap.String("name", providerName), zap.String("operation", op.Name), zap.Error(err))
-		return err
-	}
-	clusterID := clu.Annotations[common.AnnotationProviderClusterID]
-	nodes, err := client.ClusterNodes(context.TODO(), clusterID)
-	if err != nil {
-		logger.Error("get cloud provider failed", zap.String("name", providerName), zap.String("operation", op.Name), zap.Error(err))
-		return err
-	}
-	for _, v := range nodes.Data {
-		kcNodeID, hasNodeUUID := v.Labels[common.LabelNodeUUID]
-		if hasNodeUUID {
-			node, err := s.clusterOperator.GetNode(context.TODO(), kcNodeID)
-			if err != nil {
-				logger.Error("get kc node failed", zap.String("kc agentID", kcNodeID), zap.String("operation", op.Name), zap.Error(err))
-				return err
-			}
-			// add annotations to mark rancherNodeID to kcNode
-			nodeRancherID := node.Annotations[common.AnnotationProviderNodeID]
-			if nodeRancherID != v.UUID {
-				node.Annotations[common.AnnotationProviderNodeID] = v.ID
-			}
-			if _, err = s.clusterOperator.UpdateNode(context.TODO(), node); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
 }
 
 func (s *Service) syncClusterCondition(op *v1.Operation, clu *v1.Cluster) error {

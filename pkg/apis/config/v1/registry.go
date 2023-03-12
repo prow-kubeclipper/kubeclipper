@@ -25,8 +25,6 @@ import (
 
 	v1 "github.com/kubeclipper/kubeclipper/pkg/scheme/core/v1"
 
-	"github.com/kubeclipper/kubeclipper/pkg/license"
-
 	"github.com/kubeclipper/kubeclipper/pkg/errors"
 	"github.com/kubeclipper/kubeclipper/pkg/models/platform"
 
@@ -54,8 +52,8 @@ const (
 
 var GroupVersion = schema.GroupVersion{Group: GroupName, Version: "v1"}
 
-func AddToContainer(c *restful.Container, platformOperator platform.Operator, p license.Interface, config *serverconfig.Config) error {
-	h := newHandler(platformOperator, p, config)
+func AddToContainer(c *restful.Container, platformOperator platform.Operator, config *serverconfig.Config) error {
+	h := newHandler(platformOperator, config)
 
 	webservice := runtime.NewWebService(GroupVersion)
 	webservice.Route(webservice.GET("/oauth").
@@ -104,21 +102,6 @@ func AddToContainer(c *restful.Container, platformOperator platform.Operator, p 
 			DefaultValue("false")).
 		Returns(http.StatusOK, http.StatusText(http.StatusOK), kc.ComponentMeta{}).
 		Returns(http.StatusNotFound, http.StatusText(http.StatusNotFound), nil))
-
-	// license
-	webservice.Route(webservice.GET("/license").
-		Doc("Information about license").
-		Metadata(restfulspec.KeyOpenAPITags, []string{CoreConfigTag}).
-		To(h.DescribeLicense).
-		Returns(http.StatusOK, http.StatusText(http.StatusOK), license.LicenseInfo{}).
-		Returns(http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError), errors.HTTPError{}))
-	webservice.Route(webservice.PUT("/license").
-		Doc("Update license").
-		Metadata(restfulspec.KeyOpenAPITags, []string{CoreConfigTag}).
-		To(h.UpdateLicense).
-		Reads(LicenseRequest{}).
-		Returns(http.StatusOK, http.StatusText(http.StatusOK), license.LicenseInfo{}).
-		Returns(http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError), errors.HTTPError{}))
 
 	webservice.Route(webservice.GET("/template").
 		Doc("Information about platform template").

@@ -14,9 +14,10 @@ import (
 
 	"github.com/kubeclipper/kubeclipper/pkg/cli/deploy"
 
-	"github.com/spf13/cobra"
-
 	"github.com/kubeclipper/kubeclipper/pkg/simple/client/kc"
+	"github.com/kubeclipper/kubeclipper/pkg/utils/cmdutil"
+
+	"github.com/spf13/cobra"
 
 	"github.com/kubeclipper/kubeclipper/cmd/kcctl/app/options"
 	"github.com/kubeclipper/kubeclipper/pkg/cli/config"
@@ -175,11 +176,11 @@ func (o *UpgradeOptions) checkBinary() error {
 	if o.component == options.UpgradeAll || o.component == options.UpgradeConsole {
 		return fmt.Errorf("can not upgrade kc and console using binary file")
 	}
-	cmd, err := sshutils.RunCmdAsSSH(fmt.Sprintf("file %s", o.pkg))
+	cmd, err := cmdutil.RunCmd(false, "file", o.pkg)
 	if err != nil {
 		return err
 	}
-	if !strings.Contains(cmd.Stdout, "ELF") {
+	if !strings.Contains(cmd.StdOut(), "ELF") {
 		return fmt.Errorf("pkg [%s] is not a binary file", o.pkg)
 	}
 	dir := filepath.Dir(o.pkg)

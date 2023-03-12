@@ -26,14 +26,15 @@ import (
 	"github.com/kubeclipper/kubeclipper/pkg/constatns"
 
 	"github.com/golang/mock/gomock"
+
+	mock_cluster "github.com/kubeclipper/kubeclipper/pkg/models/cluster/mock"
+	"github.com/kubeclipper/kubeclipper/pkg/scheme/common"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/kubeclipper/kubeclipper/pkg/component"
 	nfsprovisioner "github.com/kubeclipper/kubeclipper/pkg/component/nfs"
-	"github.com/kubeclipper/kubeclipper/pkg/models/cluster"
-	mock_cluster "github.com/kubeclipper/kubeclipper/pkg/models/cluster/mock"
-	"github.com/kubeclipper/kubeclipper/pkg/scheme/common"
 	v1 "github.com/kubeclipper/kubeclipper/pkg/scheme/core/v1"
 )
 
@@ -105,36 +106,31 @@ var (
 	extraMeta = &component.ExtraMetadata{
 		Masters: []component.Node{
 			{
-				ID:       "1e3ea00f-1403-46e5-a486-70e4cb29d541",
-				IPv4:     "192.168.1.1",
-				NodeIPv4: "192.168.2.1",
-				Region:   "default",
+				ID:     "1e3ea00f-1403-46e5-a486-70e4cb29d541",
+				IPv4:   "192.168.1.1",
+				Region: "default",
 			},
 			{
-				ID:       "43ed594a-a76f-4370-a14d-551e7b6153de",
-				IPv4:     "192.168.1.2",
-				NodeIPv4: "192.168.2.2",
-				Region:   "default",
+				ID:     "43ed594a-a76f-4370-a14d-551e7b6153de",
+				IPv4:   "192.168.1.2",
+				Region: "default",
 			},
 			{
-				ID:       "c7a91d86-cd53-4c3f-85b0-fbc657778067",
-				IPv4:     "192.168.1.3",
-				NodeIPv4: "192.168.2.3",
-				Region:   "default",
+				ID:     "c7a91d86-cd53-4c3f-85b0-fbc657778067",
+				IPv4:   "192.168.1.3",
+				Region: "default",
 			},
 		},
 		Workers: []component.Node{
 			{
-				ID:       "4cf1ad74-704c-4290-a523-e524e930245d",
-				IPv4:     "192.168.1.4",
-				NodeIPv4: "192.168.2.4",
-				Region:   "default",
+				ID:     "4cf1ad74-704c-4290-a523-e524e930245d",
+				IPv4:   "192.168.1.4",
+				Region: "default",
 			},
 			{
-				ID:       "ae4ba282-27f9-4a93-8fe9-63f786781d48",
-				IPv4:     "192.168.1.5",
-				NodeIPv4: "192.168.2.5",
-				Region:   "default",
+				ID:     "ae4ba282-27f9-4a93-8fe9-63f786781d48",
+				IPv4:   "192.168.1.5",
+				Region: "default",
 			},
 		},
 	}
@@ -151,17 +147,11 @@ var (
 )
 
 func Test_parseOperationFromCluster(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	clusterMockOperator := mock_cluster.NewMockOperator(ctrl)
-	setUpClusterMock(clusterMockOperator)
-
+	h := newHandler(nil, nil, nil, nil, nil, nil)
 	type args struct {
-		c               *v1.Cluster
-		clusterOperator cluster.Operator
-		meta            *component.ExtraMetadata
-		action          v1.StepAction
+		c      *v1.Cluster
+		meta   *component.ExtraMetadata
+		action v1.StepAction
 	}
 	tests := []struct {
 		name    string
@@ -171,10 +161,9 @@ func Test_parseOperationFromCluster(t *testing.T) {
 		{
 			name: "test parse cluster install steps",
 			args: args{
-				c:               c1,
-				clusterOperator: clusterMockOperator,
-				meta:            extraMeta,
-				action:          v1.ActionInstall,
+				c:      c1,
+				meta:   extraMeta,
+				action: v1.ActionInstall,
 			},
 			wantErr: false,
 		},
@@ -190,7 +179,7 @@ func Test_parseOperationFromCluster(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := ParseOperationFromCluster(tt.args.clusterOperator, tt.args.meta, tt.args.c, tt.args.action)
+			_, err := h.parseOperationFromCluster(tt.args.meta, tt.args.c, tt.args.action)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("parseOperationFromCluster() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -200,19 +189,13 @@ func Test_parseOperationFromCluster(t *testing.T) {
 }
 
 func Test_parseOperationFromComponent(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	clusterMockOperator := mock_cluster.NewMockOperator(ctrl)
-	setUpClusterMock(clusterMockOperator)
-
 	type args struct {
-		action          v1.StepAction
-		clusterOperator cluster.Operator
-		meta            *component.ExtraMetadata
-		cluster         *v1.Cluster
-		components      []v1.Addon
+		action     v1.StepAction
+		meta       *component.ExtraMetadata
+		cluster    *v1.Cluster
+		components []v1.Addon
 	}
+	h := newHandler(nil, nil, nil, nil, nil, nil)
 	nfs := nfsprovisioner.NFSProvisioner{
 		ManifestsDir:     "/tmp/.nfs",
 		Namespace:        "kube-system",
@@ -243,27 +226,25 @@ func Test_parseOperationFromComponent(t *testing.T) {
 		{
 			name: "test parse component install step",
 			arg: args{
-				action:          v1.ActionInstall,
-				clusterOperator: clusterMockOperator,
-				meta:            extraMeta,
-				cluster:         c1,
-				components:      com,
+				action:     v1.ActionInstall,
+				meta:       extraMeta,
+				cluster:    c1,
+				components: com,
 			},
 		},
 		{
 			name: "test parse component uninstall step",
 			arg: args{
-				action:          v1.ActionUninstall,
-				clusterOperator: clusterMockOperator,
-				meta:            extraMeta,
-				cluster:         c1,
-				components:      com,
+				action:     v1.ActionUninstall,
+				meta:       extraMeta,
+				cluster:    c1,
+				components: com,
 			},
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := ParseOperationFromComponent(context.Background(), test.arg.clusterOperator, test.arg.meta, test.arg.components, test.arg.cluster, test.arg.action)
+			_, err := h.parseOperationFromComponent(context.Background(), test.arg.meta, test.arg.components, test.arg.cluster, test.arg.action)
 			if err != nil {
 				t.Errorf("  parseOperationFromComponent() error: %v", err)
 			}
@@ -352,12 +333,14 @@ func Test_parseRecoverySteps(t *testing.T) {
 	clusterMockOperator := mock_cluster.NewMockOperator(ctrl)
 	setUpClusterMock(clusterMockOperator)
 
+	h := &handler{
+		clusterOperator: clusterMockOperator,
+	}
 	type args struct {
-		clusterOperator cluster.Operator
-		cluster         *v1.Cluster
-		backup          *v1.Backup
-		restore         string
-		action          v1.StepAction
+		cluster *v1.Cluster
+		backup  *v1.Backup
+		restore string
+		action  v1.StepAction
 	}
 	tests := []struct {
 		name string
@@ -366,11 +349,10 @@ func Test_parseRecoverySteps(t *testing.T) {
 		{
 			name: "test recovery backup step",
 			arg: args{
-				clusterOperator: clusterMockOperator,
-				cluster:         c1,
-				backup:          bp,
-				restore:         "/tmp/backup",
-				action:          v1.ActionInstall,
+				cluster: c1,
+				backup:  bp,
+				restore: "/tmp/backup",
+				action:  v1.ActionInstall,
 			},
 		},
 		{
@@ -385,7 +367,7 @@ func Test_parseRecoverySteps(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := ParseRecoverySteps(test.arg.clusterOperator, test.arg.cluster, test.arg.backup, "/tmp/backup", test.arg.action)
+			_, err := h.parseRecoverySteps(test.arg.cluster, test.arg.backup, "/tmp/backup", test.arg.action)
 			if err != nil {
 				t.Errorf(" parseRecoverySteps() error: %v", err)
 			}
@@ -424,20 +406,21 @@ func Test_parseActBackupSteps(t *testing.T) {
 			},
 			ProxyIpv4CIDR: "10.0.0.0/32",
 			Status: v1.NodeStatus{
-				Ipv4DefaultIP:     "127.0.0.1",
-				NodeIpv4DefaultIP: "127.0.0.1",
+				Ipv4DefaultIP: "127.0.0.1",
 				NodeInfo: v1.NodeSystemInfo{
 					Hostname: "test",
 				},
 			},
 		},
 		nil).AnyTimes()
+	h := &handler{
+		clusterOperator: clusterMockOperator,
+	}
 
 	type args struct {
-		clusterOperator cluster.Operator
-		cluster         *v1.Cluster
-		backup          *v1.Backup
-		action          v1.StepAction
+		cluster *v1.Cluster
+		backup  *v1.Backup
+		action  v1.StepAction
 	}
 	tests := []struct {
 		name string
@@ -446,10 +429,9 @@ func Test_parseActBackupSteps(t *testing.T) {
 		{
 			name: "test create backup step",
 			arg: args{
-				clusterOperator: clusterMockOperator,
-				cluster:         c1,
-				backup:          bp,
-				action:          v1.ActionInstall,
+				cluster: c1,
+				backup:  bp,
+				action:  v1.ActionInstall,
 			},
 		},
 		{
@@ -463,7 +445,7 @@ func Test_parseActBackupSteps(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := ParseActBackupSteps(test.arg.clusterOperator, test.arg.cluster, test.arg.backup, test.arg.action)
+			_, err := h.parseActBackupSteps(test.arg.cluster, test.arg.backup, test.arg.action)
 			if err != nil {
 				t.Errorf(" parseActBackupSteps() error: %v", err)
 			}

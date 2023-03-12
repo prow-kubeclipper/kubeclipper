@@ -240,7 +240,7 @@ func NewCmdRegistryClean(o *RegistryOptions) *cobra.Command {
 	cmd.Flags().StringVar(&o.Node, "node", o.Node, "registry node.")
 	cmd.Flags().StringVar(&o.DataRoot, "data-root", o.DataRoot, "clean docker data-root value.")
 	cmd.Flags().StringVar(&o.RegistryVolume, "registry-volume", o.RegistryVolume, "clean registry volume path")
-	cmd.Flags().BoolVar(&o.RemoveDocker, "remove-docker", o.RemoveDocker, "uninstall docker")
+	cmd.Flags().BoolVar(&o.RemoveDocker, "remove-docker", o.RemoveDocker, "no uninstall docker")
 	cmd.Flags().BoolVar(&o.Force, "force", o.Force, "force uninstall")
 
 	utils.CheckErr(cmd.MarkFlagRequired("node"))

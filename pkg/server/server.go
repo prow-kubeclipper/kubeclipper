@@ -73,7 +73,6 @@ import (
 	"github.com/kubeclipper/kubeclipper/pkg/authorization/rbac"
 	"github.com/kubeclipper/kubeclipper/pkg/client/informers"
 	"github.com/kubeclipper/kubeclipper/pkg/healthz"
-	"github.com/kubeclipper/kubeclipper/pkg/license"
 	"github.com/kubeclipper/kubeclipper/pkg/logger"
 	"github.com/kubeclipper/kubeclipper/pkg/models/cluster"
 	"github.com/kubeclipper/kubeclipper/pkg/models/iam"
@@ -101,7 +100,6 @@ type APIServer struct {
 	RESTOptionsGetter     *etcdRESTOptions.SimpleRestOptionsFactory
 	storageFactory        registry.SharedStorageFactory
 	rbacAuthorizer        authorizer.Authorizer
-	licOperator           license.Interface
 	databaseAuditBackend  auditing.Backend
 	internalInformerUser  string
 	InternalInformerToken string
@@ -189,9 +187,6 @@ func (s *APIServer) Run(stopCh <-chan struct{}) (err error) {
 }
 
 func (s *APIServer) buildHandlerChain(stopCh <-chan struct{}) error {
-	s.container.Filter(filters.WithLicense(platform.NewPlatformOperator(s.storageFactory.PlatformSettings(), s.storageFactory.Events()),
-		s.licOperator, []string{"/oauth/*", "/version", "/metrics", "/healthz", "/api/config.kubeclipper.io/v1/license", "/api/core.kubeclipper.io/v1/configmaps"}))
-
 	s.container.Filter(filters.WithRequestInfo(&request.InfoFactory{APIPrefixes: sets.NewString("api")}))
 
 	iamOperator := iam.NewOperator(s.storageFactory.Users(), s.storageFactory.GlobalRoles(),
@@ -265,10 +260,8 @@ func (s *APIServer) installAPIs(stopCh <-chan struct{}) error {
 	deliverySvc := delivery.NewService(s.Config.MQOptions, clusterOperator, leaseOperator, opOperator)
 	s.Services = append(s.Services, deliverySvc)
 
-	s.licOperator = license.NewOperator(clusterOperator)
-
 	platformOperator := platform.NewPlatformOperator(s.storageFactory.PlatformSettings(), s.storageFactory.Events())
-	if err := configv1.AddToContainer(s.container, platformOperator, s.licOperator, s.Config); err != nil {
+	if err := configv1.AddToContainer(s.container, platformOperator, s.Config); err != nil {
 		return err
 	}
 
@@ -477,7 +470,6 @@ func (s *APIServer) SetupController(mgr manager.Manager, informerFactory informe
 	}).SetupWithManager(mgr, informerFactory); err != nil {
 		return err
 	}
-
 	if err = (&cloudprovidercontroller.CloudProviderReconciler{
 		ClusterLister:       informerFactory.Core().V1().Clusters().Lister(),
 		ClusterWriter:       clusterOperator,
@@ -490,7 +482,6 @@ func (s *APIServer) SetupController(mgr manager.Manager, informerFactory informe
 	}).SetupWithManager(mgr, informerFactory); err != nil {
 		return err
 	}
-
 	(&controller.ClusterStatusMon{
 		ClusterWriter:       clusterOperator,
 		ClusterLister:       informerFactory.Core().V1().Clusters().Lister(),

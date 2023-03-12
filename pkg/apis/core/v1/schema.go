@@ -24,16 +24,15 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/kubeclipper/kubeclipper/pkg/clustermanage/kubeadm"
+	"github.com/kubeclipper/kubeclipper/pkg/scheme/common"
+	"github.com/kubeclipper/kubeclipper/pkg/scheme/core/v1/k8s"
+
 	"github.com/google/uuid"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kubeclipper/kubeclipper/pkg/clustermanage/kubeadm"
-	"github.com/kubeclipper/kubeclipper/pkg/clustermanage/rancher"
 	"github.com/kubeclipper/kubeclipper/pkg/component"
-	"github.com/kubeclipper/kubeclipper/pkg/models/cluster"
-	"github.com/kubeclipper/kubeclipper/pkg/scheme/common"
 	corev1 "github.com/kubeclipper/kubeclipper/pkg/scheme/core/v1"
-	"github.com/kubeclipper/kubeclipper/pkg/scheme/core/v1/k8s"
 )
 
 type (
@@ -104,15 +103,13 @@ func (p *PatchNodes) makeWorkerCompare(cluster *corev1.Cluster) error {
 	return nil
 }
 
-// MakeOperation Must be called after MakeCompare.
-func (p *PatchNodes) MakeOperation(extra component.ExtraMetadata, cluster *corev1.Cluster, operator cluster.Operator) (*corev1.Operation, error) {
+// Must be called after MakeCompare.
+func (p *PatchNodes) MakeOperation(extra component.ExtraMetadata, cluster *corev1.Cluster) (*corev1.Operation, error) {
 	pType, ok := cluster.Labels[common.LabelClusterProviderType]
 	if ok {
 		switch pType {
 		case kubeadm.ProviderKubeadm:
 			return p.doMakeOperation(extra, cluster)
-		case rancher.ProviderRancher:
-			return MakeOperationRancher(extra, p, cluster, operator)
 		default:
 			return nil, errors.New("invalid provider type")
 		}
@@ -170,8 +167,7 @@ func (p *PatchNodes) makeWorkerOperation(extra component.ExtraMetadata, cluster 
 		op.Labels[common.LabelOperationAction] = corev1.OperationAddNodes
 
 		// container runtime
-
-		steps, err := GetCriStep(ctx, cluster, action, stepNodes)
+		steps, err := getCriStep(ctx, cluster, action, stepNodes)
 		if err != nil {
 			return nil, err
 		}
@@ -215,7 +211,7 @@ func (p *PatchNodes) makeWorkerOperation(extra component.ExtraMetadata, cluster 
 		op.Steps = append(op.Steps, steps...)
 
 		// container runtime
-		steps, err = GetCriStep(ctx, cluster, action, stepNodes)
+		steps, err = getCriStep(ctx, cluster, action, stepNodes)
 		if err != nil {
 			return nil, err
 		}
@@ -242,7 +238,7 @@ func (p *PatchNodes) getPackageSteps(cluster *corev1.Cluster, action corev1.Step
 }
 
 // checkComponent check whether the component is installed in the current cluster
-func (p *PatchComponents) CheckComponents(cluster *corev1.Cluster) error {
+func (p *PatchComponents) checkComponents(cluster *corev1.Cluster) error {
 	for _, v := range p.Addons {
 		itf, ok := component.Load(fmt.Sprintf(component.RegisterFormat, v.Name, v.Version))
 		if !ok {
@@ -296,7 +292,7 @@ func (p *PatchComponents) CheckComponents(cluster *corev1.Cluster) error {
 }
 
 // addOrRemoveComponentFromCluster update cluster components slice
-func (p *PatchComponents) AddOrRemoveComponentFromCluster(cluster *corev1.Cluster) (*corev1.Cluster, error) {
+func (p *PatchComponents) addOrRemoveComponentFromCluster(cluster *corev1.Cluster) (*corev1.Cluster, error) {
 	if p.Uninstall {
 		for _, v := range p.Addons {
 			itf, ok := component.Load(fmt.Sprintf(component.RegisterFormat, v.Name, v.Version))

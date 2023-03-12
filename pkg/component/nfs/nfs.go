@@ -26,19 +26,27 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"time"
 
+	"go.uber.org/zap"
+
+	"github.com/kubeclipper/kubeclipper/pkg/component/common"
+	"github.com/kubeclipper/kubeclipper/pkg/logger"
+	"github.com/kubeclipper/kubeclipper/pkg/simple/downloader"
+
 	"github.com/nicksnyder/go-i18n/v2/i18n"
+
+	"github.com/kubeclipper/kubeclipper/pkg/utils/strutil"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kubeclipper/kubeclipper/pkg/component"
-	"github.com/kubeclipper/kubeclipper/pkg/component/common"
 	"github.com/kubeclipper/kubeclipper/pkg/component/utils"
 	"github.com/kubeclipper/kubeclipper/pkg/component/validation"
 	v1 "github.com/kubeclipper/kubeclipper/pkg/scheme/core/v1"
 	"github.com/kubeclipper/kubeclipper/pkg/utils/fileutil"
 	"github.com/kubeclipper/kubeclipper/pkg/utils/netutil"
-	"github.com/kubeclipper/kubeclipper/pkg/utils/strutil"
 	tmplutil "github.com/kubeclipper/kubeclipper/pkg/utils/template"
 )
 
@@ -52,9 +60,6 @@ func init() {
 		panic(err)
 	}
 
-	//if err := component.RegisterAgentStep(fmt.Sprintf(component.RegisterTemplateKeyFormat, name, version, AgentImageLoader), &ImageLoader{}); err != nil {
-	//	panic(err)
-	//}
 	if err := initI18nForComponentMeta(); err != nil {
 		panic(err)
 	}
@@ -63,7 +68,6 @@ func init() {
 var (
 	_ component.Interface      = (*NFSProvisioner)(nil)
 	_ component.TemplateRender = (*NFSProvisioner)(nil)
-	//_ component.StepRunnable   = (*ImageLoader)(nil)
 )
 
 const (
@@ -210,8 +214,8 @@ func (n *NFSProvisioner) InitSteps(ctx context.Context) error {
 		{
 			ID:         strutil.GetUUID(),
 			Name:       "deployNFSProvisionerNameSpace",
-			Timeout:    metav1.Duration{Duration: 3 * time.Second},
-			ErrIgnore:  true,
+			Timeout:    metav1.Duration{Duration: 30 * time.Second},
+			ErrIgnore:  false,
 			RetryTimes: 1,
 			Nodes:      stepMaster0,
 			Action:     v1.ActionInstall,
@@ -225,8 +229,8 @@ func (n *NFSProvisioner) InitSteps(ctx context.Context) error {
 		{
 			ID:         strutil.GetUUID(),
 			Name:       "deployNFSProvisioner",
-			Timeout:    metav1.Duration{Duration: 3 * time.Second},
-			ErrIgnore:  true,
+			Timeout:    metav1.Duration{Duration: 30 * time.Second},
+			ErrIgnore:  false,
 			RetryTimes: 1,
 			Nodes:      stepMaster0,
 			Action:     v1.ActionInstall,
@@ -453,44 +457,45 @@ func (n *NFSProvisioner) Render(ctx context.Context, opts component.Options) err
 		n.renderTo, opts.DryRun)
 }
 
+// GetImageRepoMirror return ImageRepoMirror
 func (n *NFSProvisioner) GetImageRepoMirror() string {
 	return n.ImageRepoMirror
 }
 
-//type ImageLoader struct {
-//	Version string
-//	CriType string
-//	Offline bool
-//}
-//
-//func (n *ImageLoader) Install(ctx context.Context, opts component.Options) ([]byte, error) {
-//	instance, err := downloader.NewInstance(ctx, nfs, n.Version, runtime.GOARCH, !n.Offline, opts.DryRun)
-//	if err != nil {
-//		return nil, err
-//	}
-//	dstFile, err := instance.DownloadImages()
-//	if err != nil {
-//		return nil, err
-//	}
-//	// load image package
-//	if err = utils.LoadImage(ctx, opts.DryRun, dstFile, n.CriType); err == nil {
-//		logger.Info("nfs packages offline install successfully")
-//	}
-//
-//	return nil, err
-//}
-//
-//func (n *ImageLoader) Uninstall(ctx context.Context, opts component.Options) ([]byte, error) {
-//	instance, err := downloader.NewInstance(ctx, nfs, n.Version, runtime.GOARCH, !n.Offline, opts.DryRun)
-//	if err != nil {
-//		return nil, err
-//	}
-//	if err = instance.RemoveImages(); err != nil {
-//		logger.Error("remove nfs images compressed file failed", zap.Error(err))
-//	}
-//	return nil, nil
-//}
-//
-//func (n *ImageLoader) NewInstance() component.ObjectMeta {
-//	return &ImageLoader{}
-//}
+type ImageLoader struct {
+	Version string
+	CriType string
+	Offline bool
+}
+
+func (n *ImageLoader) Install(ctx context.Context, opts component.Options) ([]byte, error) {
+	instance, err := downloader.NewInstance(ctx, nfs, n.Version, runtime.GOARCH, !n.Offline, opts.DryRun)
+	if err != nil {
+		return nil, err
+	}
+	dstFile, err := instance.DownloadImages()
+	if err != nil {
+		return nil, err
+	}
+	// load image package
+	if err = utils.LoadImage(ctx, opts.DryRun, dstFile, n.CriType); err == nil {
+		logger.Info("nfs packages offline install successfully")
+	}
+
+	return nil, err
+}
+
+func (n *ImageLoader) Uninstall(ctx context.Context, opts component.Options) ([]byte, error) {
+	instance, err := downloader.NewInstance(ctx, nfs, n.Version, runtime.GOARCH, !n.Offline, opts.DryRun)
+	if err != nil {
+		return nil, err
+	}
+	if err = instance.RemoveImages(); err != nil {
+		logger.Error("remove nfs images compressed file failed", zap.Error(err))
+	}
+	return nil, nil
+}
+
+func (n *ImageLoader) NewInstance() component.ObjectMeta {
+	return &ImageLoader{}
+}

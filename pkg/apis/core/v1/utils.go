@@ -21,29 +21,23 @@ package v1
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"path/filepath"
 
-	"github.com/google/uuid"
-	apimachineryErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/sets"
 
-	"github.com/kubeclipper/kubeclipper/pkg/component"
-	"github.com/kubeclipper/kubeclipper/pkg/component/kubesphere"
-	"github.com/kubeclipper/kubeclipper/pkg/component/utils"
+	"github.com/google/uuid"
+
 	"github.com/kubeclipper/kubeclipper/pkg/models/cluster"
 	"github.com/kubeclipper/kubeclipper/pkg/query"
 
+	"github.com/kubeclipper/kubeclipper/pkg/component"
+	"github.com/kubeclipper/kubeclipper/pkg/component/utils"
 	"github.com/kubeclipper/kubeclipper/pkg/scheme/common"
 	v1 "github.com/kubeclipper/kubeclipper/pkg/scheme/core/v1"
 	"github.com/kubeclipper/kubeclipper/pkg/scheme/core/v1/cri"
 	"github.com/kubeclipper/kubeclipper/pkg/scheme/core/v1/k8s"
 	bs "github.com/kubeclipper/kubeclipper/pkg/simple/backupstore"
-)
-
-var (
-	ErrNodesRegionDifferent = errors.New("nodes belongs to different region")
 )
 
 func reverseComponents(components []v1.Addon) {
@@ -53,7 +47,7 @@ func reverseComponents(components []v1.Addon) {
 	}
 }
 
-func GetCriStep(ctx context.Context, c *v1.Cluster, action v1.StepAction, nodes []v1.StepNode) ([]v1.Step, error) {
+func getCriStep(ctx context.Context, c *v1.Cluster, action v1.StepAction, nodes []v1.StepNode) ([]v1.Step, error) {
 	switch c.ContainerRuntime.Type {
 	case v1.CRIDocker:
 		r := cri.DockerRunnable{}
@@ -92,7 +86,7 @@ func getSteps(c component.Interface, action v1.StepAction) ([]v1.Step, error) {
 	}
 }
 
-func ParseOperationFromCluster(cluOperator cluster.Operator, extraMetadata *component.ExtraMetadata, c *v1.Cluster, action v1.StepAction) (*v1.Operation, error) {
+func (h *handler) parseOperationFromCluster(extraMetadata *component.ExtraMetadata, c *v1.Cluster, action v1.StepAction) (*v1.Operation, error) {
 	var steps []v1.Step
 	region := extraMetadata.Masters[0].Region
 	if c.Labels == nil {
@@ -110,7 +104,7 @@ func ParseOperationFromCluster(cluOperator cluster.Operator, extraMetadata *comp
 	// Container runtime should be installed on all nodes.
 	ctx := component.WithExtraMetadata(context.TODO(), *extraMetadata)
 	stepNodes := utils.UnwrapNodeList(extraMetadata.GetAllNodes())
-	cSteps, err := GetCriStep(ctx, c, action, stepNodes)
+	cSteps, err := getCriStep(ctx, c, action, stepNodes)
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +125,7 @@ func ParseOperationFromCluster(cluOperator cluster.Operator, extraMetadata *comp
 		steps = append(steps, k8sSteps...)
 	}
 
-	addonSteps, err := parseAddonStep(ctx, c, cluOperator, carr, action)
+	addonSteps, err := h.parseAddonStep(ctx, c, carr, action)
 	if err != nil {
 		return nil, err
 	}
@@ -146,12 +140,12 @@ func ParseOperationFromCluster(cluOperator cluster.Operator, extraMetadata *comp
 	return op, nil
 }
 
-func initComponentExtraCluster(ctx context.Context, cluOperator cluster.Operator, p component.Interface) error {
+func (h *handler) initComponentExtraCluster(ctx context.Context, p component.Interface) error {
 	cluNames := p.RequireExtraCluster()
 	extraClulsterMeta := make(map[string]component.ExtraMetadata, len(cluNames))
 	for _, cluName := range cluNames {
-		if clu, err := cluOperator.GetClusterEx(ctx, cluName, "0"); err == nil {
-			extra, err := GetClusterMetadata(ctx, cluOperator, clu, false)
+		if clu, err := h.clusterOperator.GetClusterEx(ctx, cluName, "0"); err == nil {
+			extra, err := h.getClusterMetadata(ctx, clu, false)
 			if err != nil {
 				return err
 			}
@@ -163,86 +157,12 @@ func initComponentExtraCluster(ctx context.Context, cluOperator cluster.Operator
 	return p.CompleteWithExtraCluster(extraClulsterMeta)
 }
 
-func GetClusterMetadata(ctx context.Context, cluOperator cluster.Operator, c *v1.Cluster, skipNodeNotFound bool) (*component.ExtraMetadata, error) {
-	meta := &component.ExtraMetadata{
-		ClusterName:        c.Name,
-		Offline:            c.Offline(),
-		LocalRegistry:      c.LocalRegistry,
-		CRI:                c.ContainerRuntime.Type,
-		KubeVersion:        c.KubernetesVersion,
-		KubeletDataDir:     c.Kubelet.RootDir,
-		ControlPlaneStatus: c.Status.ControlPlaneHealth,
-	}
-	for _, addon := range c.Addons {
-		if addon.Name == "kubesphere" {
-			var cfg kubesphere.Kubesphere
-			_ = json.Unmarshal(addon.Config.Raw, &cfg)
-			meta.KsJwtSecret = cfg.JwtSecret
-		}
-		meta.Addons = append(meta.Addons, addon)
-	}
-	masters, err := GetNodeInfo(ctx, cluOperator, c.Masters, skipNodeNotFound)
-	if err != nil {
-		return nil, err
-	}
-	meta.Masters = append(meta.Masters, masters...)
-	workers, err := GetNodeInfo(ctx, cluOperator, c.Workers, skipNodeNotFound)
-	if err != nil {
-		return nil, err
-	}
-	meta.Workers = append(meta.Workers, workers...)
-	err = regionCheck(meta.Masters, meta.Workers)
-	if err != nil {
-		return nil, err
-	}
-	return meta, nil
-}
-
-func regionCheck(master, worker []component.Node) error {
-	list := sets.NewString()
-	for _, node := range master {
-		list.Insert(node.Region)
-	}
-	for _, node := range worker {
-		list.Insert(node.Region)
-	}
-	if list.Len() > 1 {
-		return ErrNodesRegionDifferent
-	}
-	return nil
-}
-
-func GetNodeInfo(ctx context.Context, cluOperator cluster.Operator, nodes v1.WorkerNodeList, skipNodeNotFound bool) ([]component.Node, error) {
-	var meta []component.Node
-	for _, node := range nodes {
-		n, err := cluOperator.GetNodeEx(ctx, node.ID, "0")
-		if err != nil {
-			if skipNodeNotFound && apimachineryErrors.IsNotFound(err) {
-				continue
-			}
-			return nil, err
-		}
-		item := component.Node{
-			ID:       n.Name,
-			IPv4:     n.Status.Ipv4DefaultIP,
-			NodeIPv4: n.Status.NodeIpv4DefaultIP,
-			Region:   n.Labels[common.LabelTopologyRegion],
-			Hostname: n.Labels[common.LabelHostname],
-			Role:     n.Labels[common.LabelNodeRole],
-		}
-		_, item.Disable = n.Labels[common.LabelNodeDisable]
-		meta = append(meta, item)
-	}
-
-	return meta, nil
-}
-
-func ParseRecoverySteps(cluOperator cluster.Operator, c *v1.Cluster, b *v1.Backup, restoreDir string, action v1.StepAction) ([]v1.Step, error) {
+func (h *handler) parseRecoverySteps(c *v1.Cluster, b *v1.Backup, restoreDir string, action v1.StepAction) ([]v1.Step, error) {
 	steps := make([]v1.Step, 0)
 
 	q := query.New()
 	q.LabelSelector = fmt.Sprintf("%s=%s", common.LabelClusterName, c.Name)
-	nodeList, err := cluOperator.ListNodes(context.TODO(), q)
+	nodeList, err := h.clusterOperator.ListNodes(context.TODO(), q)
 	if err != nil {
 		return nil, err
 	}
@@ -255,7 +175,6 @@ func ParseRecoverySteps(cluOperator cluster.Operator, c *v1.Cluster, b *v1.Backu
 			workers = append(workers, component.Node{
 				ID:       node.Name,
 				IPv4:     node.Status.Ipv4DefaultIP,
-				NodeIPv4: node.Status.NodeIpv4DefaultIP,
 				Hostname: node.Status.NodeInfo.Hostname,
 			})
 			continue
@@ -265,12 +184,11 @@ func ParseRecoverySteps(cluOperator cluster.Operator, c *v1.Cluster, b *v1.Backu
 		masters = append(masters, component.Node{
 			ID:       node.Name,
 			IPv4:     node.Status.Ipv4DefaultIP,
-			NodeIPv4: node.Status.NodeIpv4DefaultIP,
 			Hostname: node.Status.NodeInfo.Hostname,
 		})
 	}
 
-	bp, err := cluOperator.GetBackupPoint(context.TODO(), b.BackupPointName, "0")
+	bp, err := h.clusterOperator.GetBackupPoint(context.TODO(), b.BackupPointName, "0")
 	if err != nil {
 		return nil, err
 	}
@@ -337,8 +255,7 @@ func getRecoveryStep(c *v1.Cluster, bp *v1.BackupPoint, b *v1.Backup, restoreDir
 }
 
 // parseOperationFromComponent parse operation instance from component
-
-func ParseOperationFromComponent(ctx context.Context, cluOperator cluster.Operator, extraMetadata *component.ExtraMetadata, addons []v1.Addon, c *v1.Cluster, action v1.StepAction) (*v1.Operation, error) {
+func (h *handler) parseOperationFromComponent(ctx context.Context, extraMetadata *component.ExtraMetadata, addons []v1.Addon, c *v1.Cluster, action v1.StepAction) (*v1.Operation, error) {
 	var err error
 	op := &v1.Operation{}
 	op.Name = uuid.New().String()
@@ -348,24 +265,24 @@ func ParseOperationFromComponent(ctx context.Context, cluOperator cluster.Operat
 	}
 	// with extra meta data
 	ctx = component.WithExtraMetadata(ctx, *extraMetadata)
-	op.Steps, err = parseAddonStep(ctx, c, cluOperator, addons, action)
+	op.Steps, err = h.parseAddonStep(ctx, c, addons, action)
 	if err != nil {
 		return nil, err
 	}
 	return op, nil
 }
 
-func ParseActBackupSteps(cluOperator cluster.Operator, c *v1.Cluster, b *v1.Backup, action v1.StepAction) ([]v1.Step, error) {
+func (h *handler) parseActBackupSteps(c *v1.Cluster, b *v1.Backup, action v1.StepAction) ([]v1.Step, error) {
 	steps := make([]v1.Step, 0)
 
 	q := query.New()
 	q.LabelSelector = fmt.Sprintf("%s=%s", common.LabelClusterName, c.Name)
 
-	bp, err := cluOperator.GetBackupPointEx(context.TODO(), b.BackupPointName, "0")
+	bp, err := h.clusterOperator.GetBackupPointEx(context.TODO(), b.BackupPointName, "0")
 	if err != nil {
 		return nil, err
 	}
-	pNode, err := cluOperator.GetNodeEx(context.TODO(), b.PreferredNode, "0")
+	pNode, err := h.clusterOperator.GetNodeEx(context.TODO(), b.PreferredNode, "0")
 	if err != nil {
 		return nil, err
 	}
@@ -387,7 +304,6 @@ func getActBackupStep(c *v1.Cluster, b *v1.Backup, bp *v1.BackupPoint, pNode *v1
 	meta.Masters = []component.Node{{
 		ID:       b.PreferredNode, // the preferred node is used by default
 		IPv4:     pNode.Status.Ipv4DefaultIP,
-		NodeIPv4: pNode.Status.NodeIpv4DefaultIP,
 		Hostname: pNode.Status.NodeInfo.Hostname,
 	}}
 	ctx := component.WithExtraMetadata(context.TODO(), meta)
@@ -417,7 +333,7 @@ func getActBackupStep(c *v1.Cluster, b *v1.Backup, bp *v1.BackupPoint, pNode *v1
 	return actBackup.GetStep(action), nil
 }
 
-func ParseUpdateCertOperation(clu *v1.Cluster, extraMetadata *component.ExtraMetadata) (*v1.Operation, error) {
+func (h *handler) parseUpdateCertOperation(clu *v1.Cluster, extraMetadata *component.ExtraMetadata) (*v1.Operation, error) {
 	cert := &k8s.Certification{}
 	op := &v1.Operation{}
 	nodes := utils.UnwrapNodeList(extraMetadata.Masters)
@@ -425,7 +341,7 @@ func ParseUpdateCertOperation(clu *v1.Cluster, extraMetadata *component.ExtraMet
 	return op, nil
 }
 
-func CheckBackupPointInUse(backups *v1.BackupList, name string) bool {
+func (h *handler) checkBackupPointInUse(backups *v1.BackupList, name string) bool {
 	for _, item := range backups.Items {
 		if item.BackupPointName == name {
 			return true
@@ -446,7 +362,7 @@ func MarkToOriginNode(ctx context.Context, operator cluster.Operator, kcNodeID s
 	return operator.UpdateNode(ctx, node)
 }
 
-func parseAddonStep(ctx context.Context, clu *v1.Cluster, cluOperator cluster.Operator, addons []v1.Addon, action v1.StepAction) ([]v1.Step, error) {
+func (h *handler) parseAddonStep(ctx context.Context, clu *v1.Cluster, addons []v1.Addon, action v1.StepAction) ([]v1.Step, error) {
 	var steps []v1.Step
 	registry := sets.NewString(clu.ContainerRuntime.InsecureRegistry...)
 	for _, comp := range addons {
@@ -467,7 +383,7 @@ func parseAddonStep(ctx context.Context, clu *v1.Cluster, cluOperator cluster.Op
 				registry.Insert(m)
 			}
 		}
-		if err := initComponentExtraCluster(ctx, cluOperator, newComp); err != nil {
+		if err := h.initComponentExtraCluster(ctx, newComp); err != nil {
 			return []v1.Step{}, err
 		}
 		if err := newComp.Validate(); err != nil {

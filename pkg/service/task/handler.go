@@ -234,7 +234,7 @@ func runTemplateRenderCommand(ctx context.Context, cmd *v1.TemplateCommand, dryR
 	errMsg := "render template error"
 	tmplRender, ok := component.LoadTemplate(cmd.Identity)
 	if !ok {
-		logger.Errorf("unsupported template render agent step: %s", cmd.Identity)
+		logger.Errorf("unsupported custom agent step: %s", cmd.Identity)
 		return &errors.StatusError{
 			Message: errMsg,
 			Reason:  "template not found",

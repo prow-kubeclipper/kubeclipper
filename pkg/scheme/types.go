@@ -88,7 +88,7 @@ func (x MetaKcVersions) Swap(i, j int)      { x[i], x[j] = x[j], x[i] }
 func (m *PackageMetadata) ReadMetadata(online bool, path string) error {
 	if online {
 		c := http.DefaultClient
-		resp, err := c.Get(fmt.Sprintf("%s/metadata-ee.json", downloader.CloudStaticServer))
+		resp, err := c.Get(fmt.Sprintf("%s/metadata.json", downloader.CloudStaticServer))
 		if err != nil {
 			return err
 		}

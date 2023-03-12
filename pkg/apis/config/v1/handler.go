@@ -39,21 +39,18 @@ import (
 
 	"github.com/emicklei/go-restful"
 
-	"github.com/kubeclipper/kubeclipper/pkg/license"
 	"github.com/kubeclipper/kubeclipper/pkg/models/platform"
 	"github.com/kubeclipper/kubeclipper/pkg/server/restplus"
 )
 
 type handler struct {
 	platformOperator platform.Operator
-	licOperator      license.Interface
 	serverConfig     *serverconfig.Config
 }
 
-func newHandler(operator platform.Operator, p license.Interface, config *serverconfig.Config) *handler {
+func newHandler(operator platform.Operator, config *serverconfig.Config) *handler {
 	return &handler{
 		platformOperator: operator,
-		licOperator:      p,
 		serverConfig:     config,
 	}
 }

@@ -117,7 +117,6 @@ type KubeadmConfig struct {
 	CACertHashes         string        `json:"caCertHashes,omitempty"`
 	BootstrapToken       string        `json:"bootstrapToken,omitempty"`
 	CertificateKey       string        `json:"certificateKey,omitempty"`
-	AdvertiseAddress     string        `json:"advertiseAddress,omitempty"`
 }
 
 type ControlPlane struct {
@@ -141,9 +140,7 @@ type ClusterNode struct {
 	EtcdDataPath        string
 }
 
-type Health struct {
-	KubernetesVersion string
-}
+type Health struct{}
 
 type Certification struct{}
 
@@ -277,13 +274,12 @@ func (stepper KubeadmConfig) Install(ctx context.Context, opts component.Options
 	if stepper.Kubelet.RootDir == "" {
 		stepper.Kubelet.RootDir = KubeletDefaultDataDir
 	}
-	agentIP, err := stepper.getAgentNodeIP()
-	if err != nil {
-		logger.Errorf("get node ip failed: %s", err.Error())
-		return nil, err
+	if stepper.Kubelet.IPAsName {
+		stepper.Kubelet.NodeIP, err = getAgentNodeIP()
+		if err != nil {
+			return nil, err
+		}
 	}
-	// NodeIP is used for kubelet communication and api-server host ip
-	stepper.Kubelet.NodeIP = agentIP
 	// kubeadm join apiserver.cluster.local:6443 --token s9afr8.tsibqbmgddqku6xu --discovery-token-ca-cert-hash sha256:e34ec831f206237b38a1b29d46b5df599018c178959b874f6b14fe2438194f9d --control-plane --certificate-key 46518267766fc19772ecc334c13190f8131f1bf48a213538879f6427f74fe8e2
 	// kubeadm join apiserver.cluster.local:6443 --token s9afr8.tsibqbmgddqku6xu --discovery-token-ca-cert-hash sha256:e34ec831f206237b38a1b29d46b5df599018c178959b874f6b14fe2438194f9d
 	if stepper.IsControlPlane {
@@ -294,8 +290,6 @@ func (stepper KubeadmConfig) Install(ctx context.Context, opts component.Options
 		stepper.BootstrapToken = masterJoinCmd[4]
 		stepper.CACertHashes = masterJoinCmd[6]
 		stepper.CertificateKey = masterJoinCmd[9]
-		// TODO: When adding a master node, can set the `--apiserver-advertise-address` and `--apiserver-bind-port` parameters.
-		stepper.AdvertiseAddress = agentIP
 	} else {
 		workerJoinCmd := strings.Split(cmds[1], " ")
 		if len(workerJoinCmd) < 6 {
@@ -328,17 +322,17 @@ func (stepper KubeadmConfig) Render(ctx context.Context, opts component.Options)
 	if stepper.Kubelet.RootDir == "" {
 		stepper.Kubelet.RootDir = KubeletDefaultDataDir
 	}
+	if stepper.Kubelet.IPAsName {
+		stepper.Kubelet.NodeIP, err = getAgentNodeIP()
+		if err != nil {
+			return err
+		}
+	}
 	// local registry not filled and is in online mode, the default repo mirror proxy will be used
 	if !stepper.Offline && stepper.LocalRegistry == "" {
 		stepper.LocalRegistry = component.GetRepoMirror(ctx)
 		logger.Info("render kubernetes config, the default repo mirror proxy will be used", zap.String("local_registry", stepper.LocalRegistry))
 	}
-	agentIP, err := stepper.getAgentNodeIP()
-	if err != nil {
-		logger.Errorf("get node ip failed: %s", err.Error())
-		return err
-	}
-	stepper.Kubelet.NodeIP = agentIP
 
 	if err := os.MkdirAll(ManifestDir, 0755); err != nil {
 		return err
@@ -384,21 +378,6 @@ func (stepper *KubeadmConfig) matchClusterConfigAPIVersion() (string, error) {
 	return "v1beta3", nil
 }
 
-func (stepper *KubeadmConfig) getAgentNodeIP() (string, error) {
-	agentConfig, err := config.TryLoadFromDisk()
-	if err != nil {
-		return "", errors.WithMessage(err, "load agent config")
-	}
-	ip, err := netutil.GetDefaultIP(true, agentConfig.NodeIPDetect)
-	if err != nil {
-		return "", err
-	}
-	if ip.String() == "" {
-		return "", fmt.Errorf("agent node ip is empty, adjust the node-ip-detect configuration")
-	}
-	return ip.String(), nil
-}
-
 func (stepper *ControlPlane) NewInstance() component.ObjectMeta {
 	return &ControlPlane{}
 }
@@ -425,16 +404,13 @@ func (stepper *ControlPlane) Install(ctx context.Context, opts component.Options
 	if err != nil {
 		return nil, err
 	}
-	agentConfig, err := config.TryLoadFromDisk()
-	if err != nil {
-		return nil, errors.WithMessage(err, "load agent config")
-	}
-	ipnet, err := netutil.GetDefaultIP(true, agentConfig.NodeIPDetect)
+
+	agenIP, err := getAgentNodeIP()
 	if err != nil {
 		return nil, err
 	}
 	// add apiserver domain name to /etc/hosts
-	hosts.AddHost(ipnet.String(), stepper.APIServerDomainName)
+	hosts.AddHost(agenIP, stepper.APIServerDomainName)
 	if err := hosts.Save(); err != nil {
 		return nil, err
 	}
@@ -713,7 +689,7 @@ func (stepper *ClusterNode) Install(ctx context.Context, opts component.Options)
 		if err != nil {
 			return nil, errors.WithMessage(err, "load agent config")
 		}
-		ipnet, err := netutil.GetDefaultIP(true, agentConfig.NodeIPDetect)
+		ipnet, err := netutil.GetDefaultIP(true, agentConfig.IPDetect)
 		if err != nil {
 			return nil, err
 		}
@@ -850,43 +826,6 @@ func (stepper *Health) checkPodStatus(ctx context.Context, opts component.Option
 		return fmt.Errorf("there are no running pods: %s", strings.Join(ec.Args[1:], ","))
 	}
 	return err
-}
-
-func (stepper *Health) getRegisterServiceAccountCommands() ([]v1.Command, error) {
-	commands := []v1.Command{
-		{
-			Type:         v1.CommandShell,
-			ShellCommand: []string{"kubectl", "create", "sa", "kc-server", "-n", "kube-system"},
-		},
-		{
-			Type:         v1.CommandShell,
-			ShellCommand: []string{"kubectl", "create", "clusterrolebinding", "kc-server", "--clusterrole=cluster-admin", "--serviceaccount=kube-system:kc-server"},
-		},
-	}
-	ver, err := strutil.StealKubernetesMajorVersionNumber(stepper.KubernetesVersion)
-	if err != nil {
-		return nil, err
-	}
-	// Kubernetes does not automatically create a secret for `ServiceAccount` after v1.24. You need to do so yourself.
-	if ver >= 124 {
-		secretJSON := `{"apiVersion":"v1","kind":"Secret","metadata":{"annotations":{"kubernetes.io/service-account.name":"kc-server"},"name":"kc-server-secret","namespace":"kube-system"},"type":"kubernetes.io/service-account-token"}`
-		filePath := filepath.Join(ManifestDir, "kc-server-secret.json")
-		createSecretCmd := fmt.Sprintf("echo '%s' > %s | kubectl create -f %s -n kube-system", secretJSON, filePath, filePath)
-		// 1. create service-account-token secret
-		// 2. patch service-account secrets
-		patchCommand := []v1.Command{
-			{
-				Type:         v1.CommandShell,
-				ShellCommand: []string{"bash", "-c", createSecretCmd},
-			},
-			{
-				Type:         v1.CommandShell,
-				ShellCommand: []string{"bash", "-c", `kubectl patch sa kc-server -n kube-system -p '{"secrets":[{"name":"kc-server-secret"}]}'`},
-			},
-		}
-		commands = append(commands[:1], append(patchCommand, commands[1])...)
-	}
-	return commands, nil
 }
 
 func (stepper *Certification) NewInstance() component.ObjectMeta {

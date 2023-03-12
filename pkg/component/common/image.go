@@ -102,7 +102,7 @@ func (i *Imager) InstallSteps(nodeList component.NodeList) ([]v1.Step, error) {
 		{
 			ID:         strutil.GetUUID(),
 			Name:       fmt.Sprintf("%s-imageLoad", i.PkgName),
-			Timeout:    metav1.Duration{Duration: 90 * time.Minute},
+			Timeout:    metav1.Duration{Duration: 30 * time.Minute},
 			ErrIgnore:  false,
 			RetryTimes: 0,
 			Nodes:      utils.UnwrapNodeList(nodeList),

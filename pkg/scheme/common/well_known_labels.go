@@ -45,7 +45,6 @@ const (
 
 	LabelClusterProviderType = "kubeclipper.io/clusterProviderType"
 	LabelClusterProviderName = "kubeclipper.io/clusterProviderName"
-	LabelNodeUUID            = "kubeclipper.io/nodeUUID" // label to provider
 )
 
 const (

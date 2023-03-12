@@ -128,7 +128,7 @@ func (h *handler) SendVerificationCode(req *restful.Request, response *restful.R
 		return
 	}
 	if err := h.mfaAuthenticator.ProviderRequest(sendSmsRequest); err != nil {
-		restplus.HandleError(response, req, err)
+		restplus.HandleInternalError(response, req, err)
 		return
 	}
 	response.WriteHeader(http.StatusOK)
@@ -231,16 +231,16 @@ func (h *handler) verificationCodeGrant(req *restful.Request, response *restful.
 		restplus.HandleBadRequest(response, req, err)
 		return
 	}
-	values := make(url.Values)
+	var values url.Values
 	values.Set("code", code)
 	authenticated, err := h.mfaAuthenticator.Authenticate(provider, token, values)
 	if err != nil {
-		restplus.HandleError(response, req, err)
+		restplus.HandleUnauthorized(response, req, err)
 		return
 	}
 	result, err := h.tokenOperator.IssueTo(authenticated)
 	if err != nil {
-		restplus.HandleError(response, req, err)
+		restplus.HandleUnauthorized(response, req, err)
 		return
 	}
 	_ = response.WriteHeaderAndEntity(http.StatusOK, result)

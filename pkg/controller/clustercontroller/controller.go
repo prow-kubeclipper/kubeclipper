@@ -229,10 +229,6 @@ func (r *ClusterReconciler) updateClusterNode(ctx context.Context, c *v1.Cluster
 func (r *ClusterReconciler) updateNodeRoleLabel(ctx context.Context, clusterName, nodeName string, role common.NodeRole, del bool) error {
 	node, err := r.NodeLister.Get(nodeName)
 	if err != nil {
-		// for provider,provider will delete node first,then delete cluster,ignore not found error
-		if errors.IsNotFound(err) {
-			return nil
-		}
 		return err
 	}
 	if del {
@@ -359,7 +355,7 @@ func (r *ClusterReconciler) getKubeConfig(ctx context.Context, c *v1.Cluster) (s
 	// there is 3 ip maybe used in kubeconfig,sort by priority: proxyServer > floatIP > defaultIP
 	proxyAPIServer := node.Annotations[common.AnnotationMetadataProxyAPIServer]
 	floatIP := node.Annotations[common.AnnotationMetadataFloatIP]
-	apiServer := node.Status.NodeIpv4DefaultIP + ":6443"
+	apiServer := node.Status.Ipv4DefaultIP + ":6443"
 	if floatIP != "" {
 		apiServer = floatIP + ":6443"
 	}
@@ -528,7 +524,6 @@ func criRegistryUpdateStep(cluster *v1.Cluster, registries []v1.RegistrySpec, no
 		allNodes = append(allNodes, v1.StepNode{
 			ID:       node.Name,
 			IPv4:     node.Status.Ipv4DefaultIP,
-			NodeIPv4: node.Status.NodeIpv4DefaultIP,
 			Hostname: node.Labels[common.LabelHostname],
 		})
 	}

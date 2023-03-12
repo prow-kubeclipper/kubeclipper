@@ -804,7 +804,7 @@ var Roles = []iamv1.GlobalRole{
 			},
 			{
 				APIGroups: []string{"config.kubeclipper.io"},
-				Resources: []string{"license", "oauth"},
+				Resources: []string{"oauth"},
 				Verbs:     []string{"get", "list", "watch", "update", "patch"},
 			},
 		},
@@ -830,7 +830,7 @@ var Roles = []iamv1.GlobalRole{
 			},
 			{
 				APIGroups: []string{"config.kubeclipper.io"},
-				Resources: []string{"license", "oauth"},
+				Resources: []string{"oauth"},
 				Verbs:     []string{"get", "list", "watch", "update", "patch"},
 			},
 		},

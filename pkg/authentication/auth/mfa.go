@@ -20,22 +20,22 @@ package auth
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/emicklei/go-restful"
+	"github.com/kubeclipper/kubeclipper/pkg/logger"
+	"github.com/kubeclipper/kubeclipper/pkg/models/iam"
+
 	"github.com/google/uuid"
+
+	"github.com/kubeclipper/kubeclipper/pkg/simple/client/cache"
+
 	"k8s.io/apiserver/pkg/authentication/user"
 
 	"github.com/kubeclipper/kubeclipper/pkg/authentication/mfa"
-	"github.com/kubeclipper/kubeclipper/pkg/logger"
-	"github.com/kubeclipper/kubeclipper/pkg/models/iam"
-	"github.com/kubeclipper/kubeclipper/pkg/simple/client/cache"
 )
 
 const (
@@ -83,9 +83,6 @@ func (m *mfaAuthenticator) Providers(info user.Info) (UserMFAProviders, error) {
 func (m *mfaAuthenticator) ProviderRequest(provider mfa.UserMFAProvider) error {
 	value, err := m.cache.Get(fmt.Sprintf("mfa-%s", provider.Token))
 	if err != nil {
-		if errors.Is(err, cache.ErrNotExists) {
-			return restful.NewError(http.StatusBadRequest, "invalid mfa token")
-		}
 		return err
 	}
 	p, err := mfa.GetProvider(provider.Type)
@@ -100,10 +97,6 @@ func (m *mfaAuthenticator) ProviderRequest(provider mfa.UserMFAProvider) error {
 	if err != nil {
 		return err
 	}
-	if usr.Spec.Phone == "" {
-		return restful.NewError(http.StatusBadRequest, "no phone number set")
-	}
-
 	return p.Request(&user.DefaultInfo{
 		Name:   usrName,
 		UID:    "",
@@ -119,9 +112,6 @@ func (m *mfaAuthenticator) Authenticate(provider string, token string, values ur
 	tokenKey := fmt.Sprintf("mfa-%s", token)
 	value, err := m.cache.Get(tokenKey)
 	if err != nil {
-		if errors.Is(err, err) {
-			return nil, restful.NewError(http.StatusBadRequest, "invalid mfa token")
-		}
 		return nil, err
 	}
 	p, err := mfa.GetProvider(provider)
@@ -135,10 +125,12 @@ func (m *mfaAuthenticator) Authenticate(provider string, token string, values ur
 	}
 	usr, err := m.iamOperator.GetUserEx(context.TODO(), usrName, "0", false, false)
 	if err != nil {
-		return nil, restful.NewError(http.StatusNotFound, "user not exist")
+		return nil, err
 	}
 	info := &user.DefaultInfo{
-		Name: usrName,
+		Name:   usrName,
+		UID:    "",
+		Groups: nil,
 		Extra: map[string][]string{
 			"phone": {usr.Spec.Phone},
 			"email": {usr.Spec.Email},

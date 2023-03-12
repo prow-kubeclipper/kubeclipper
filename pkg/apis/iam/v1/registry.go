@@ -53,14 +53,6 @@ func AddToContainer(c *restful.Container, iamOperator iam.Operator, authz author
 
 	h := newHandler(iamOperator, authz, tokenOperator)
 
-	// Token  API just for test
-	//webservice.Route(webservice.POST("/tokens").
-	//	To(h.CreateTokens).
-	//	Metadata(restfulspec.KeyOpenAPITags, []string{CoreIAMTag}).
-	//	Doc("Create tokens.").
-	//	Reads(iamv1.Token{}).
-	//	Returns(http.StatusOK, http.StatusText(http.StatusOK), iamv1.Token{}))
-
 	webservice.Route(webservice.GET("/tokens").
 		To(h.ListTokens).
 		Metadata(restfulspec.KeyOpenAPITags, []string{CoreIAMTag}).

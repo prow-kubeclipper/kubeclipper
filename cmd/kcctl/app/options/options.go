@@ -51,7 +51,7 @@ var (
 	HomeDIR = homedir.HomeDir()
 )
 
-var (
+const (
 	Contact = `
  _   __      _          _____ _ _
 | | / /     | |        /  __ \ (_)
@@ -61,7 +61,7 @@ var (
 \_| \_/\__,_|_.__/ \___|\____/_|_| .__/| .__/ \___|_|
                                  | |   | |
                                  |_|   |_|
-        repository: https://github.com/kubeclipper-labs/kubeclipper`
+        repository: github.com/kubeclipper`
 )
 
 const (
@@ -85,7 +85,6 @@ const (
 	NatsIOClient     = "kc-server-nats-client"
 	NatsIOServer     = "kc-server-nats-server"
 	NatsAltNameProxy = "proxy.kubeclipper.io" // add nats server SAN for agent proxy
-
 )
 
 const IPDetectDescription = `
@@ -93,30 +92,23 @@ To eliminate node specific IP address configuration,the KubeClipper can be confi
 In many systems, there might be multiple physical interfaces on a host, or possibly multiple IP addresses configured 
 on a physical interface.In these cases, there are multiple addresses to choose from and soautodetection of the correct 
 address can be tricky.
-
 The IP autodetection methods are provided to improve the selection of thecorrect address, by limiting the selection 
 based on suitable criteria for your deployment.
-
 The following sections describe the available IP autodetection methods.
-
 1. first-found
 The first-found option enumerates all interface IP addresses and returns the first valid IP address (based on IP version
 and type of address) on the first valid interface. 
 Certain known “local” interfaces are omitted, such as the docker bridge.The order that both the interfaces and the IP 
 addresses are listed is system dependent.
-
 This is the default detection method. 
 However, since this method only makes a very simplified guess,it is recommended to either configure the node with a 
 specific IP address,or to use one of the other detection methods.
-
 2. interface=INTERFACE-REGEX
 The interface method uses the supplied interface regular expression to enumerate matching interfaces and to return the 
 first IP address on the first matching interface. 
 The order that both the interfaces and the IP addresses are listed is system dependent.
-
 Example with valid IP address on interface eth0, eth1, eth2 etc.:
 interface=eth.*
-
 3. cidr=CIDR
 The cidr method will select any IP address from the node that falls within the given CIDRs.
 Example:
@@ -272,7 +264,6 @@ type DeployConfig struct {
 	Agents             Agents                         `json:"agents" yaml:"agents,omitempty"`
 	Proxys             []string                       `json:"proxys" yaml:"proxys,omitempty"`
 	IPDetect           string                         `json:"ipDetect" yaml:"ipDetect,omitempty"`
-	NodeIPDetect       string                         `json:"nodeIPDetect" yaml:"nodeIPDetect,omitempty"`
 	Debug              bool                           `json:"debug" yaml:"debug,omitempty"`
 	DefaultRegion      string                         `json:"defaultRegion" yaml:"defaultRegion,omitempty"`
 	ServerPort         int                            `json:"serverPort" yaml:"serverPort,omitempty"`
@@ -452,7 +443,6 @@ func getRepoMirror() string {
 func (c *DeployConfig) AddFlags(flags *pflag.FlagSet) {
 	flags.StringVarP(&c.Config, "deploy-config", "c", c.Config, "Path to the config file to use for Deploy.")
 	flags.StringVar(&c.IPDetect, "ip-detect", c.IPDetect, fmt.Sprintf("Kc agent node ip detect method. Used to route between nodes. \n%s", IPDetectDescription))
-	flags.StringVar(&c.NodeIPDetect, "node-ip-detect", c.NodeIPDetect, fmt.Sprintf("Kc agent node ip detect method. Used for routing between nodes in the kubernetes cluster. If not specified, ip-detect is inherited. \n%s", IPDetectDescription))
 	flags.BoolVar(&c.Debug, "debug", c.Debug, "Deploy kc use debug mode")
 	flags.StringVarP(&c.DefaultRegion, "region", "r", c.DefaultRegion, "Kc agent default region")
 	flags.IntVar(&c.ServerPort, "server-port", c.ServerPort, "Kc server port")
@@ -574,7 +564,6 @@ func (c *DeployConfig) GetKcAgentConfigTemplateContent(metadata Metadata) (strin
 	data["Region"] = metadata.Region
 	data["FloatIP"] = metadata.FloatIP
 	data["IPDetect"] = c.IPDetect
-	data["NodeIPDetect"] = c.NodeIPDetect
 	data["StaticServerAddress"] = fmt.Sprintf("http://%s:%d", c.ServerIPs[0], c.StaticServerPort)
 	if c.Debug {
 		data["LogLevel"] = "debug"

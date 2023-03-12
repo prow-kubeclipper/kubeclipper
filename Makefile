@@ -17,8 +17,8 @@ deps:
 		CLIENT_GEN=$(shell which client-gen)
     endif
 
-.PHONY: build build-server build-agent build-cli build-migrate openapi build-proxy
-build: build-server build-agent build-cli
+.PHONY: build build-server build-agent build-proxy build-cli openapi
+build: build-server build-agent build-proxy build-cli
 
 build-server:
 	KUBE_VERBOSE=2 bash hack/make-rules/build.sh cmd/kubeclipper-server
@@ -34,9 +34,6 @@ build-cli:
 
 build-e2e:
 	go test -c -ldflags "-s -w" -o dist/e2e.test ./test/e2e
-
-build-migrate:
-	KUBE_VERBOSE=2 bash hack/make-rules/build.sh cmd/kc-migrate
 
 openapi:
 	go run ./tools/doc-gen/main.go

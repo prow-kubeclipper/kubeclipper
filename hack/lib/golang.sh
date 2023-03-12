@@ -9,7 +9,6 @@ kube::golang::server_targets() {
     cmd/kubeclipper-agent
     cmd/kubeclipper-proxy
     cmd/kcctl
-    cmd/kc-migrate
     test/e2e
     vendor/github.com/onsi/ginkgo/ginkgo
   )
@@ -32,7 +31,6 @@ readonly KUBE_STATIC_LIBRARIES=(
   kubeclipper-agent
   kubeclipper-proxy
   kcctl
-  kc-migrate
   e2e.test
 )
 
@@ -62,14 +60,13 @@ kube::golang::build_binaries() {
   (
     local host_platform
     host_platform=$(kube::golang::host_platform)
-    args=$(kube::args::arg_list)
 
     local goflags goldflags
     # If GOLDFLAGS is unset, then set it to the a default of "-s -w".
     # Disable SC2153 for this, as it will throw a warning that the local
     # variable goldflags will exist, and it suggest changing it to this.
     # shellcheck disable=SC2153
-    goldflags="${GOLDFLAGS=-s -w -buildid=} $(kube::version::ldflags) $args"
+    goldflags="${GOLDFLAGS=-s -w -buildid=} $(kube::version::ldflags)"
 
     local -a targets=()
     local arg

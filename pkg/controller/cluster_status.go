@@ -32,7 +32,6 @@ import (
 	"github.com/kubeclipper/kubeclipper/pkg/utils/httputil"
 
 	"github.com/kubeclipper/kubeclipper/pkg/clustermanage"
-
 	"github.com/kubeclipper/kubeclipper/pkg/scheme/common"
 
 	"github.com/kubeclipper/kubeclipper/pkg/scheme/core/v1/k8s"
@@ -206,7 +205,7 @@ func (s *ClusterStatusMon) updateClusterCertification(clusterName string) error 
 	if _, err = s.ClusterWriter.UpdateCluster(context.TODO(), clu); err != nil {
 		s.log.Warn("update cluster certification status failed", zap.String("cluster", clu.Name), zap.Error(err))
 	}
-	return err
+	return nil
 }
 
 func (s *ClusterStatusMon) getCertificationFromProvider(clu *v1.Cluster) ([]v1.Certification, error) {
@@ -290,7 +289,7 @@ func (s *ClusterStatusMon) updateClusterControlPlaneStatus(clu *v1.Cluster) erro
 		}
 		proxyAPIServer := node.Annotations[common.AnnotationMetadataProxyAPIServer]
 		floatIP := node.Annotations[common.AnnotationMetadataFloatIP]
-		apiServer := node.Status.NodeIpv4DefaultIP + ":6443"
+		apiServer := node.Status.Ipv4DefaultIP + ":6443"
 		if floatIP != "" {
 			apiServer = floatIP + ":6443"
 		}

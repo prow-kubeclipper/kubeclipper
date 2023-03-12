@@ -20,7 +20,6 @@ package v1
 
 import (
 	"fmt"
-	"net/url"
 	"reflect"
 	"testing"
 
@@ -28,11 +27,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime"
 
-	"github.com/kubeclipper/kubeclipper/pkg/component/kubesphere"
 	nfsprovisioner "github.com/kubeclipper/kubeclipper/pkg/component/nfs"
-
-	cephcsi "github.com/kubeclipper/kubeclipper/pkg/component/ceph"
-	"github.com/kubeclipper/kubeclipper/pkg/component/cinder"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -121,31 +116,10 @@ var (
 			Version: "v1",
 			Config:  runtime.RawExtension{Raw: []byte(`{"scName": "nfs-provisioner-v1"}`)},
 		},
-		{
-			Name:    "cinder",
-			Version: "v1",
-			Config:  runtime.RawExtension{Raw: []byte(`{"scName": "cinder-v1"}`)},
-		},
-		{
-			Name:    "ceph-csi",
-			Version: "v1",
-			Config:  runtime.RawExtension{Raw: []byte(`{"scName": "ceph-csi-v1"}`)},
-		},
-		{
-			Name:    "kubesphere",
-			Version: "v1",
-			Config:  runtime.RawExtension{Raw: []byte(`{"scName": "kubesphere-v1"}`)},
-		},
 	}
 )
 
 func init() {
-	cc := &cephcsi.CephCSI{}
-	_ = component.Register(fmt.Sprintf(component.RegisterFormat, "ceph-csi", "v1"), cc)
-	cd := &cinder.Cinder{}
-	_ = component.Register(fmt.Sprintf(component.RegisterFormat, "cinder", "v1"), cd)
-	ks := &kubesphere.Kubesphere{}
-	_ = component.Register(fmt.Sprintf(component.RegisterFormat, "kubesphere", "v1"), ks)
 	nfs := &nfsprovisioner.NFSProvisioner{}
 	_ = component.Register(fmt.Sprintf(component.RegisterFormat, "nfs-provisioner", "v1"), nfs)
 
@@ -284,7 +258,7 @@ func Test_MakeOperation(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := test.arg.patchNodes.MakeOperation(test.arg.meta, test.arg.cluster, nil)
+			_, err := test.arg.patchNodes.MakeOperation(test.arg.meta, test.arg.cluster)
 			if err != nil && err != test.wantErr {
 				t.Errorf(" MakeOperation() error: %v ", err)
 			}
@@ -354,7 +328,7 @@ func Test_checkComponents(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			if err := test.arg.pc.CheckComponents(test.arg.cluster); (err != nil) != test.wantErr {
+			if err := test.arg.pc.checkComponents(test.arg.cluster); (err != nil) != test.wantErr {
 				t.Errorf(" checkComponents() error: %v", err)
 			}
 		})
@@ -388,23 +362,7 @@ func Test_addOrRemoveComponentFromCluster(t *testing.T) {
 					},
 				},
 			},
-			want: []v1.Addon{
-				{
-					Name:    "cinder",
-					Version: "v1",
-					Config:  runtime.RawExtension{Raw: []byte(`{"scName": "cinder-v1"}`)},
-				},
-				{
-					Name:    "ceph-csi",
-					Version: "v1",
-					Config:  runtime.RawExtension{Raw: []byte(`{"scName": "ceph-csi-v1"}`)},
-				},
-				{
-					Name:    "kubesphere",
-					Version: "v1",
-					Config:  runtime.RawExtension{Raw: []byte(`{"scName": "kubesphere-v1"}`)},
-				},
-			},
+			want: []v1.Addon{},
 		},
 		{
 			name: "test install component",
@@ -425,21 +383,6 @@ func Test_addOrRemoveComponentFromCluster(t *testing.T) {
 			},
 			want: []v1.Addon{
 				{
-					Name:    "cinder",
-					Version: "v1",
-					Config:  runtime.RawExtension{Raw: []byte(`{"scName": "cinder-v1"}`)},
-				},
-				{
-					Name:    "ceph-csi",
-					Version: "v1",
-					Config:  runtime.RawExtension{Raw: []byte(`{"scName": "ceph-csi-v1"}`)},
-				},
-				{
-					Name:    "kubesphere",
-					Version: "v1",
-					Config:  runtime.RawExtension{Raw: []byte(`{"scName": "kubesphere-v1"}`)},
-				},
-				{
 					Name:    "testComponent",
 					Version: "v1",
 					Config:  runtime.RawExtension{Raw: []byte(`{"scName": "testComponent-v1"}`)},
@@ -449,7 +392,7 @@ func Test_addOrRemoveComponentFromCluster(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := test.arg.pc.AddOrRemoveComponentFromCluster(test.arg.cluster)
+			got, err := test.arg.pc.addOrRemoveComponentFromCluster(test.arg.cluster)
 			if err != nil {
 				t.Errorf("addOrRemoveComponentFromCluster() error: %v", err)
 			}
@@ -458,11 +401,4 @@ func Test_addOrRemoveComponentFromCluster(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestSa(t *testing.T) {
-	path := "nodes/cm:as"
-	escape := url.PathEscape(path)
-	fmt.Printf("url:%s escape:%s\n", path, escape)
-
 }

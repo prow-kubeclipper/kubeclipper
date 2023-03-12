@@ -57,9 +57,6 @@ func init() {
 		panic(err)
 	}
 
-	//if err := component.RegisterAgentStep(fmt.Sprintf(component.RegisterTemplateKeyFormat, name, version, AgentImageLoader), &nfsprovisioner.ImageLoader{}); err != nil {
-	//	panic(err)
-	//}
 	if err := initI18nForComponentMeta(); err != nil {
 		panic(err)
 	}
@@ -320,8 +317,8 @@ func (n *NFS) InitSteps(ctx context.Context) error {
 		{
 			ID:         strutil.GetUUID(),
 			Name:       "deployNFSProvisioner",
-			Timeout:    metav1.Duration{Duration: 3 * time.Second},
-			ErrIgnore:  true,
+			Timeout:    metav1.Duration{Duration: 30 * time.Second},
+			ErrIgnore:  false,
 			RetryTimes: 1,
 			Nodes:      stepMaster0,
 			Action:     v1.ActionInstall,
@@ -385,6 +382,7 @@ func (n *NFS) UnInstall(ctx context.Context) error {
 	return nil
 }
 
+// GetImageRepoMirror return ImageRepoMirror
 func (n *NFS) GetImageRepoMirror() string {
 	return n.ImageRepoMirror
 }

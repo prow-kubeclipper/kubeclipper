@@ -30,7 +30,6 @@ type PlatformSetting struct {
 	// Standard object's metadata.
 	// +optional
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	License           string         `json:"license,omitempty"`
 	Template          DockerRegistry `json:"template,omitempty"`
 	Terminal          WebTerminal    `json:"terminal,omitempty"`
 }
