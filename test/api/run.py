@@ -7,7 +7,7 @@ start_shell = "gabbi-run -v all 172.20.139.223 -- {}"
 
 
 result_data = {}
-totoal_api = 69
+totoal_api = 75
 current_api = 5
 total_number = 0
 pass_number = 0
@@ -91,3 +91,5 @@ with open("report","w+") as f:
 if pass_number*1.0/total_number>=0.95:
     with open("result","w+") as f:
         f.write("api-test successfully")
+
+
